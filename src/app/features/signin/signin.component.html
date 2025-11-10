@@ -1,0 +1,9 @@
+<app-signin-layout>
+  <app-signin-visual
+    visual
+    [imageSrc]="visualConfig.imageSrc"
+    [imageAlt]="visualConfig.imageAlt" />
+
+  <app-signin-form form mode="signin" (submitForm)="onFormSubmit($event)" />
+  <app-signin-layout> </app-signin-layout
+></app-signin-layout>

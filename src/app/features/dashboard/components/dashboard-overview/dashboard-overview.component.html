@@ -1,0 +1,495 @@
+<div class="space-y-6">
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div
+      *ngFor="let stat of stats()"
+      class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+    >
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-gray-600">{{ stat.title }}</p>
+          <p class="text-2xl font-bold text-gray-900 mt-2">{{ stat.value }}</p>
+          <p
+            class="text-xs mt-2 flex items-center gap-1"
+            [class.text-green-600]="stat.trend === 'up'"
+            [class.text-red-600]="stat.trend === 'down'"
+          >
+            <svg
+              *ngIf="stat.trend === 'up'"
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
+            </svg>
+            <svg
+              *ngIf="stat.trend === 'down'"
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+              />
+            </svg>
+            <span>{{ stat.change }}</span>
+          </p>
+        </div>
+        <div
+          [class]="
+            stat.iconColor +
+            ' w-12 h-12 rounded-lg flex items-center justify-center'
+          "
+        >
+          <!-- Clipboard Icon -->
+          <svg
+            *ngIf="stat.icon === 'clipboard'"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          <!-- Login Icon -->
+          <svg
+            *ngIf="stat.icon === 'login'"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+            />
+          </svg>
+          <!-- Logout Icon -->
+          <svg
+            *ngIf="stat.icon === 'logout'"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+          <!-- Dollar Icon -->
+          <svg
+            *ngIf="stat.icon === 'dollar'"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Reservations Table -->
+  <div
+    class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+  >
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-bold text-gray-900">Recent Room Reservations</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Guest
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Room Type
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Room
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Check-in
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Check-out
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Status
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Total
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr
+            *ngFor="let reservation of reservations()"
+            class="hover:bg-gray-50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-3">
+                <img
+                  [src]="reservation.avatar"
+                  [alt]="reservation.guest"
+                  class="w-10 h-10 rounded-full bg-gray-200"
+                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23cbd5e1%22%3E%3Cpath d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/%3E%3C/svg%3E'"
+                />
+                <span class="text-sm font-medium text-gray-900">{{
+                  reservation.guest
+                }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              {{ reservation.roomType }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              {{ reservation.room }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              {{ reservation.checkIn }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              {{ reservation.checkOut }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                [class]="
+                  getStatusClass(reservation.status) +
+                  ' px-3 py-1 text-xs font-semibold rounded-full'
+                "
+              >
+                {{ reservation.status }}
+              </span>
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900"
+            >
+              ${{ reservation.total }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div
+      class="px-6 py-4 border-t border-gray-200 flex items-center justify-between"
+    >
+      <p class="text-sm text-gray-600">
+        Showing 1 to 10 of {{ totalResults }} results
+      </p>
+      <div class="flex items-center gap-2">
+        <button
+          (click)="changePage(currentPage() - 1)"
+          [disabled]="currentPage() === 1"
+          class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <button
+          *ngFor="let page of [1, 2, 3]"
+          (click)="changePage(page)"
+          [class.bg-amber-500]="currentPage() === page"
+          [class.text-white]="currentPage() === page"
+          [class.bg-white]="currentPage() !== page"
+          [class.text-gray-700]="currentPage() !== page"
+          class="px-3 py-1 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          {{ page }}
+        </button>
+        <button
+          (click)="changePage(currentPage() + 1)"
+          [disabled]="currentPage() >= getTotalPages()"
+          class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guest Stats and Wallet Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Guest Stats -->
+    <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div
+        *ngFor="let stat of guestStats()"
+        class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+      >
+        <div class="flex flex-col items-center text-center gap-3">
+          <div
+            [class]="
+              stat.iconColor +
+              ' w-14 h-14 rounded-full flex items-center justify-center'
+            "
+          >
+            <svg
+              *ngIf="stat.icon === 'users'"
+              class="w-7 h-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <svg
+              *ngIf="stat.icon === 'user-check'"
+              class="w-7 h-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <svg
+              *ngIf="stat.icon === 'crown'"
+              class="w-7 h-7"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.7-6.3 4.7 2.3-7-6-4.6h7.6z"
+              />
+            </svg>
+            <svg
+              *ngIf="stat.icon === 'user-plus'"
+              class="w-7 h-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-600">{{ stat.title }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">
+              {{ stat.value }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wallet Card -->
+    <div
+      class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white relative overflow-hidden"
+    >
+      <div class="relative z-10">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold">Wallet</h3>
+          <button
+            class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-semibold transition-colors backdrop-blur-sm"
+          >
+            Withdraw Funds
+          </button>
+        </div>
+
+        <!-- Trophy Icon -->
+        <div class="flex justify-center mb-6">
+          <div class="relative">
+            <div
+              class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center"
+            >
+              <svg
+                class="w-14 h-14 text-yellow-300"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                />
+              </svg>
+            </div>
+            <div class="absolute -top-2 -left-2">
+              <svg
+                class="w-6 h-6 text-yellow-400"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                />
+              </svg>
+            </div>
+            <div class="absolute -bottom-3 -right-3">
+              <svg
+                class="w-8 h-8 text-yellow-400"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Earnings and Balance -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Total Earnings</p>
+            <p class="text-xl font-bold">
+              ₦{{ walletEarnings().toLocaleString() }}.00
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              Please note this is the total sum of yr transaction here on
+              <span class="font-semibold">DOOR AFRICA</span>
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Balance</p>
+            <p class="text-xl font-bold">
+              ₦{{ walletBalance().toLocaleString() }}.00
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              Please note this the current balance amount left on yr wallet
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decorative elements -->
+      <div
+        class="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full -mr-16 -mt-16"
+      ></div>
+      <div
+        class="absolute bottom-0 left-0 w-24 h-24 bg-purple-400/10 rounded-full -ml-12 -mb-12"
+      ></div>
+    </div>
+  </div>
+
+  <!-- Room Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div
+      *ngFor="let stat of roomStats()"
+      class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+    >
+      <div class="flex flex-col items-center text-center gap-3">
+        <div
+          [class]="
+            stat.iconColor +
+            ' w-14 h-14 rounded-full flex items-center justify-center'
+          "
+        >
+          <svg
+            *ngIf="stat.icon === 'building'"
+            class="w-7 h-7"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+            />
+          </svg>
+          <svg
+            *ngIf="stat.icon === 'check-circle'"
+            class="w-7 h-7"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <svg
+            *ngIf="stat.icon === 'home'"
+            class="w-7 h-7"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.7-6.3 4.7 2.3-7-6-4.6h7.6z"
+            />
+          </svg>
+          <svg
+            *ngIf="stat.icon === 'currency'"
+            class="w-7 h-7"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-600">{{ stat.title }}</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">
+            <span *ngIf="stat.icon === 'currency'">$</span>{{ stat.value }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
