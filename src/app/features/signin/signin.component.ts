@@ -22,7 +22,7 @@ export class SigninComponent {
   onFormSubmit(event: { mode: string; data: any }): void {
     if (event.mode === 'signin') {
       console.log('Sign in attempt:', event.data);
-      this.router.navigate(['/dashboard']);
+      
     } else if (event.mode === 'forgot') {
       console.log('Password reset request:', event.data);
       alert('Reset link sent to your email!');

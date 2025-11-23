@@ -20,6 +20,10 @@ import { NgOptimizedImage } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
+import { LoginService } from '../../../../core/services/login.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { EmpleadoDTO } from '../../../../core/models/EmpleadoDTO';
+import { Router } from '@angular/router';
 
 export type AuthMode = 'signin' | 'change-password';
 
@@ -40,6 +44,7 @@ export interface UnifiedAuthConfig {
   forgotPasswordText?: string;
   backToSigninText?: string;
 }
+
 
 export function passwordMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -104,7 +109,10 @@ export class SigninFormComponent implements OnInit {
     backToSigninText: 'Remember your password? ',
   };
 
-  constructor(private fb: FormBuilder) {}
+  usuario!: EmpleadoDTO;
+
+  constructor(private fb: FormBuilder, private loginService: LoginService,
+    private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
     this.updateFormByMode();
@@ -138,7 +146,23 @@ export class SigninFormComponent implements OnInit {
   }
 
   onSubmit(): void {
+    const correo = this.authForm.get('username')?.value; // <-- Aquí está el usuario
+    const contrasena = this.authForm.get('password')?.value; // <-- Aquí está la contraseña
+
+
     if (this.authForm.valid) {
+      this.usuario;
+      this.loginService.login(correo, contrasena).subscribe({
+        next: (usuario) => {
+          this.usuario = usuario;
+          this.authService.setUsuario(usuario);
+          this.router.navigate(['/dashboard']);
+        },
+        error: (err) => {
+          //alert('Login failed: ' + err.message);
+          this.authForm.hasError('passwordMismatch')
+        }
+      });
       this.submitForm.emit({
         mode: this.mode,
         data: this.authForm.value,
