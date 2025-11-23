@@ -121,28 +121,7 @@
         </button>
       </div>
 
-      <!-- Toggle Links -->
-      <div class="text-center">
-        <!-- Forgot Password Link (modo signin) -->
-        <a
-          *ngIf="mode === 'signin'"
-          (click)="toggleMode()"
-          class="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
-        >
-          {{ config.forgotPasswordText }}
-          <span class="font-semibold">change password</span>
-        </a>
 
-        <!-- Back to Sign In Link (modo change password) -->
-        <a
-          *ngIf="mode === 'change-password'"
-          (click)="toggleMode()"
-          class="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
-        >
-          {{ config.backToSigninText }}
-          <span class="font-semibold">Sign in</span>
-        </a>
-      </div>
     </form>
   </div>
 </div>
