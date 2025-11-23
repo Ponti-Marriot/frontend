@@ -10,7 +10,7 @@ import { EmpleadoDTO } from '../models/EmpleadoDTO';
 export class LoginService {
 
   
-  baseUrl = backUrl + "/autenticacion/login"
+  baseUrl = backUrl + "/usuarios/inicioSesion"
 
   constructor(private http: HttpClient) { }
 
