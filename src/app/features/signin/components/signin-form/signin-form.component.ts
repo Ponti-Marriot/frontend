@@ -124,8 +124,8 @@ export class SigninFormComponent implements OnInit {
 
     if (this.mode === 'signin') {
       this.authForm = this.fb.group({
-        username: ['', [Validators.required, Validators.minLength(3)]],
-        password: ['', [Validators.required, Validators.minLength(6)]],
+        username: ['', [Validators.required, Validators.minLength(1)]],
+        password: ['', [Validators.required, Validators.minLength(1)]],
       });
     } else {
       this.authForm = this.fb.group(
