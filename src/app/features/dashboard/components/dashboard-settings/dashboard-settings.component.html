@@ -1,9 +1,9 @@
 <div class="space-y-6">
-  <!-- RegiÃ³n / Hotel / Add Room -->
+  <!-- Región / Hotel / Add Room -->
   <div
     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
   >
-    <!-- RegiÃ³n + info -->
+    <!-- Región + info -->
     <div class="flex flex-col sm:flex-row sm:items-start gap-6">
       <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -16,15 +16,15 @@
 
           <button
             class="text-[11px] px-2 py-1 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
-            (click)="changeRegion('BogotÃ¡')"
+            (click)="changeRegion('Bogotá')"
           >
-            BogotÃ¡
+            Bogotá
           </button>
           <button
             class="text-[11px] px-2 py-1 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
-            (click)="changeRegion('MedellÃ­n')"
+            (click)="changeRegion('Medellín')"
           >
-            MedellÃ­n
+            Medellín
           </button>
           <button
             class="text-[11px] px-2 py-1 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
@@ -35,7 +35,7 @@
         </div>
 
         <p class="text-xs text-gray-500 mt-1 max-w-xs">
-          Gestiona disponibilidad, tarifas y ocupaciÃ³n hotel por hotel.
+          Gestiona disponibilidad, tarifas y ocupación hotel por hotel.
         </p>
       </div>
 
@@ -134,7 +134,7 @@
             ' w-12 h-12 rounded-lg flex items-center justify-center'
           "
         >
-          <!-- Ãconos -->
+          <!-- Íconos -->
           <svg
             *ngIf="stat.icon === 'building'"
             class="w-6 h-6"
@@ -195,7 +195,7 @@
     </div>
   </div>
 
-  <!-- === Cards por tipo de habitaciÃ³n === -->
+  <!-- === Cards por tipo de habitación === -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <div
       *ngFor="let roomType of roomTypeStats()"
@@ -574,7 +574,7 @@
               ' w-14 h-14 rounded-full flex items-center justify-center'
             "
           >
-            <!-- Ã­conos -->
+            <!-- Íconos -->
             <svg
               *ngIf="stat.icon === 'users'"
               class="w-7 h-7"
@@ -701,20 +701,20 @@
           <div>
             <p class="text-xs text-gray-400 mb-1">Total Earnings</p>
             <p class="text-xl font-bold">
-              â‚¦{{ walletEarnings().toLocaleString() }}.00
+              ₦{{ walletEarnings().toLocaleString() }}.00
             </p>
             <p class="text-xs text-gray-400 mt-1">
-              Please note this is the total sum of yr transaction here on
+              Please note this is the total sum of your transaction here on
               <span class="font-semibold">DOOR AFRICA</span>
             </p>
           </div>
           <div>
             <p class="text-xs text-gray-400 mb-1">Balance</p>
             <p class="text-xl font-bold">
-              â‚¦{{ walletBalance().toLocaleString() }}.00
+              ₦{{ walletBalance().toLocaleString() }}.00
             </p>
             <p class="text-xs text-gray-400 mt-1">
-              Please note this the current balance amount left on yr wallet
+              Please note this is the current balance amount left on your wallet
             </p>
           </div>
         </div>

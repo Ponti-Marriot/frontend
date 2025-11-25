@@ -1,8 +1,10 @@
+// src/app/dashboard/dashboard-reports.component.ts
 import {
   Component,
   ElementRef,
   ViewChild,
   AfterViewInit,
+  OnInit,
   signal,
   computed,
 } from '@angular/core';
@@ -14,291 +16,506 @@ import { SelectModule } from 'primeng/select';
 // D3
 import * as d3 from 'd3';
 
+import {
+  ReportsService,
+  DateRangeFilter,
+} from '../../services/reports.service';
+import {
+  Report,
+  RevenuePoint,
+  OccupancySnapshot,
+} from '../../models/reports.model';
+import {
+  Payment,
+  PaymentFilters,
+  PaginationData as PaymentPagination,
+} from '../../models/payment.model';
+import { PaymentsService } from '../../services/payments.service';
+
+interface DateRangeOption {
+  label: string;
+  value: '7d' | '30d' | '90d' | 'all';
+}
+
+interface StatCard {
+  title: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | null;
+  color: string; // clases Tailwind, ej: "bg-blue-100 text-blue-600"
+  icon: string; // icono PrimeIcons, ej: "pi pi-dollar"
+}
+
+interface ReportTransactionRow {
+  id: string; // payment.id
+  transactionId: string;
+  reservationId: string;
+  amount: number;
+  date: string; // ISO
+  status: string;
+}
+
 @Component({
   selector: 'app-dashboard-reports',
   standalone: true,
   imports: [CommonModule, FormsModule, SelectModule],
   templateUrl: './dashboard-reports.component.html',
 })
-export class DashboardReportsComponent implements AfterViewInit {
-  @ViewChild('revenueChart') revenueChart?: ElementRef<SVGElement>;
-  @ViewChild('occupancyChart') occupancyChart?: ElementRef<SVGElement>;
+export class DashboardReportsComponent implements OnInit, AfterViewInit {
+  // ---- ViewChild para los SVG de D3 ----
+  @ViewChild('revenueChart', { static: false })
+  revenueChartRef!: ElementRef<SVGSVGElement>;
 
+  @ViewChild('occupancyChart', { static: false })
+  occupancyChartRef!: ElementRef<SVGSVGElement>;
+
+  private viewReady = false;
+
+  // ---- Estado principal ----
+  private readonly _reports = signal<Report[]>([]);
+  readonly stats = signal<StatCard[]>([]);
+
+  // Para la tabla de transacciones
+  private readonly _transactions = signal<ReportTransactionRow[]>([]);
+  readonly searchTerm = signal<string>('');
+
+  // Filtro de rango
+  readonly dateRanges: DateRangeOption[] = [
+    { label: 'Last 7 days', value: '7d' },
+    { label: 'Last 30 days', value: '30d' },
+    { label: 'Last 90 days', value: '90d' },
+    { label: 'All time', value: 'all' },
+  ];
+  selectedRange: DateRangeOption['value'] = '30d';
+
+  // Modo de gráfica
   chartMode: 'monthly' | 'weekly' = 'monthly';
 
-  selectedRange = 'Last 30 Days';
-  dateRanges = [
-    { label: 'Last 7 Days', value: 'Last 7 Days' },
-    { label: 'Last 30 Days', value: 'Last 30 Days' },
-    { label: 'Last 90 Days', value: 'Last 90 Days' },
-  ];
-
-  searchTerm = signal<string>('');
-
-  private _revenueDataMonthly = signal([
-    { label: 'Jan', value: 220000 },
-    { label: 'Feb', value: 240000 },
-    { label: 'Mar', value: 260000 },
-    { label: 'Apr', value: 230000 },
-    { label: 'May', value: 280000 },
-    { label: 'Jun', value: 290000 },
-    { label: 'Jul', value: 310000 },
-    { label: 'Aug', value: 300000 },
-    { label: 'Sep', value: 320000 },
-    { label: 'Oct', value: 290000 },
-    { label: 'Nov', value: 300000 },
-    { label: 'Dec', value: 295000 },
-  ]);
-
-  private _revenueDataWeekly = signal([
-    { label: 'Wk 1', value: 54000 },
-    { label: 'Wk 2', value: 61000 },
-    { label: 'Wk 3', value: 58000 },
-    { label: 'Wk 4', value: 72000 },
-    { label: 'Wk 5', value: 69000 },
-    { label: 'Wk 6', value: 75000 },
-    { label: 'Wk 7', value: 73000 },
-    { label: 'Wk 8', value: 76000 },
-  ]);
-
-  occupancyData = signal({
-    occupied: 87.3,
-    available: 12.7,
-  });
-
-  private _transactions = signal([
-    {
-      id: '#TXN-001247',
-      guest: 'John Anderson',
-      roomType: 'Deluxe Suite',
-      amount: 450,
-      date: '2024-12-15',
-      status: 'Confirmed',
-    },
-    {
-      id: '#TXN-001246',
-      guest: 'Sarah Williams',
-      roomType: 'Standard Double',
-      amount: 280,
-      date: '2024-12-14',
-      status: 'Pending',
-    },
-    {
-      id: '#TXN-001245',
-      guest: 'Michael Chen',
-      roomType: 'Family Room',
-      amount: 380,
-      date: '2024-12-13',
-      status: 'Confirmed',
-    },
-  ]);
-
-  filteredTxs = computed(() => {
+  // Transacciones filtradas por buscador
+  readonly filteredTxs = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();
-    return this._transactions().filter(
-      (tx) =>
-        tx.guest.toLowerCase().includes(term) ||
-        tx.id.toLowerCase().includes(term)
-    );
+    if (!term) {
+      return this._transactions();
+    }
+
+    return this._transactions().filter((tx) => {
+      return (
+        tx.transactionId.toLowerCase().includes(term) ||
+        tx.reservationId.toLowerCase().includes(term) ||
+        tx.status.toLowerCase().includes(term)
+      );
+    });
   });
 
-  stats = computed(() => [
-    {
-      title: 'Total Revenue',
-      value: this.formatCurrency(284590),
-      change: '+12.5% from last month',
-      trend: 'up',
-      icon: 'pi pi-dollar',
-      color: 'bg-green-100 text-green-600',
-    },
-    {
-      title: 'Reservations',
-      value: '1,247',
-      change: '+8.2% from last month',
-      trend: 'up',
-      icon: 'pi pi-calendar',
-      color: 'bg-blue-100 text-blue-600',
-    },
-    {
-      title: 'Occupancy Rate',
-      value: '87.3%',
-      change: '+3.1% from last month',
-      trend: 'up',
-      icon: 'pi pi-building',
-      color: 'bg-purple-100 text-purple-600',
-    },
-    {
-      title: 'Avg. Daily Rate',
-      value: '$228',
-      change: '+5.7% from last month',
-      trend: 'up',
-      icon: 'pi pi-wallet',
-      color: 'bg-yellow-100 text-yellow-600',
-    },
-  ]);
+  constructor(
+    private readonly reportsService: ReportsService,
+    private readonly paymentsService: PaymentsService
+  ) {}
 
-  ngAfterViewInit() {
-    this.safeRenderCharts();
+  // ---------------- Ciclo de vida ----------------
+
+  ngOnInit(): void {
+    this.loadDataForCurrentRange();
   }
 
-  updateCharts() {
-    this.safeRenderCharts();
-  }
-  setChartMode(mode: 'monthly' | 'weekly') {
-    this.chartMode = mode;
-    this.safeRenderCharts();
+  ngAfterViewInit(): void {
+    this.viewReady = true;
+    this.updateCharts();
   }
 
-  onSearchChange(next: string) {
-    this.searchTerm.set(next);
+  // ---------------- Carga de datos ----------------
+
+  private buildRangeFilter(): DateRangeFilter | undefined {
+    const value = this.selectedRange;
+
+    if (value === 'all') return undefined;
+
+    const end = new Date();
+    const start = new Date();
+
+    if (value === '7d') {
+      start.setDate(end.getDate() - 7);
+    } else if (value === '30d') {
+      start.setDate(end.getDate() - 30);
+    } else if (value === '90d') {
+      start.setDate(end.getDate() - 90);
+    }
+
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    return { start, end };
   }
 
-  formatCurrency(v: number) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(v);
+  private loadDataForCurrentRange(): void {
+    const range = this.buildRangeFilter();
+
+    // 1) Reports agregados
+    this.reportsService.getReports(range).subscribe({
+      next: (reports) => {
+        this._reports.set(reports);
+        this.updateStatsFromReports(reports);
+        this.updateCharts();
+      },
+      error: (err) => {
+        console.error('Error loading reports', err);
+        this._reports.set([]);
+        this.stats.set([]);
+        this.updateCharts();
+      },
+    });
+
+    // 2) Transacciones recientes (payments reales)
+    this.loadRecentTransactions(range);
   }
 
-  formatDate(d: string) {
-    return new Date(d).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+  private loadRecentTransactions(range?: DateRangeFilter): void {
+    const filters: PaymentFilters = {
+      status: 'all',
+      method: 'all',
+      dateRange: range,
+      searchTerm: '',
+    };
+
+    const pagination: PaymentPagination = {
+      page: 1,
+      pageSize: 200, // traemos varios y luego tomamos los últimos 20
+      totalItems: 0,
+      totalPages: 0,
+    };
+
+    this.paymentsService.getPayments(filters, pagination).subscribe({
+      next: (result) => {
+        const payments = result.data ?? [];
+
+        // Ordenar por fecha (desc) y mapear a filas de reporte
+        const sorted = [...payments].sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db - da;
+        });
+
+        const rows: ReportTransactionRow[] = sorted.slice(0, 20).map((p) => ({
+          id: p.id,
+          transactionId: p.transactionId,
+          reservationId: p.reservationId,
+          amount: p.amount,
+          date: p.createdAt,
+          status:
+            typeof p.paymentStatus === 'string'
+              ? p.paymentStatus
+              : String(p.paymentStatus),
+        }));
+
+        this._transactions.set(rows);
+      },
+      error: (err) => {
+        console.error('Error loading recent transactions', err);
+        this._transactions.set([]);
+      },
     });
   }
 
-  private safeRenderCharts() {
-    if (this.revenueChart?.nativeElement) {
-      this.renderRevenueChart();
+  // ---------------- KPIs ----------------
+
+  private updateStatsFromReports(reports: Report[]): void {
+    if (!reports || reports.length === 0) {
+      this.stats.set([
+        {
+          title: 'Total Revenue',
+          value: '$0',
+          change: 'No data',
+          trend: null,
+          color: 'bg-blue-100 text-blue-600',
+          icon: 'pi pi-dollar',
+        },
+        {
+          title: 'Total Reservations',
+          value: '0',
+          change: '',
+          trend: null,
+          color: 'bg-green-100 text-green-600',
+          icon: 'pi pi-calendar',
+        },
+        {
+          title: 'Avg Daily Revenue',
+          value: '$0',
+          change: '',
+          trend: null,
+          color: 'bg-amber-100 text-amber-600',
+          icon: 'pi pi-chart-line',
+        },
+        {
+          title: 'Avg Price/Night',
+          value: '$0',
+          change: '',
+          trend: null,
+          color: 'bg-purple-100 text-purple-600',
+          icon: 'pi pi-moon',
+        },
+      ]);
+      return;
     }
-    if (this.occupancyChart?.nativeElement) {
-      this.renderOccupancyChart();
-    }
+
+    const totalRevenue = reports.reduce(
+      (sum, r) => sum + (r.totalRevenue ?? 0),
+      0
+    );
+    const totalReservations = reports.reduce(
+      (sum, r) => sum + (r.totalReservations ?? 0),
+      0
+    );
+    const avgPrice =
+      reports.reduce((sum, r) => sum + (r.avgPricePerNight ?? 0), 0) /
+      reports.length;
+
+    const uniqueDates = new Set(reports.map((r) => r.createdAt)).size || 1;
+    const avgDailyRevenue = totalRevenue / uniqueDates;
+
+    this.stats.set([
+      {
+        title: 'Total Revenue',
+        value: this.formatCurrency(totalRevenue),
+        change: '',
+        trend: 'up',
+        color: 'bg-blue-100 text-blue-600',
+        icon: 'pi pi-dollar',
+      },
+      {
+        title: 'Total Reservations',
+        value: totalReservations.toString(),
+        change: '',
+        trend: 'up',
+        color: 'bg-green-100 text-green-600',
+        icon: 'pi pi-calendar',
+      },
+      {
+        title: 'Avg Daily Revenue',
+        value: this.formatCurrency(avgDailyRevenue),
+        change: '',
+        trend: 'up',
+        color: 'bg-amber-100 text-amber-600',
+        icon: 'pi pi-chart-line',
+      },
+      {
+        title: 'Avg Price/Night',
+        value: this.formatCurrency(avgPrice),
+        change: '',
+        trend: null,
+        color: 'bg-purple-100 text-purple-600',
+        icon: 'pi pi-moon',
+      },
+    ]);
   }
 
-  private renderRevenueChart() {
-    const data =
-      this.chartMode === 'monthly'
-        ? this._revenueDataMonthly()
-        : this._revenueDataWeekly();
+  // ---------------- Gráficas ----------------
 
-    const svgEl = this.revenueChart!.nativeElement;
+  setChartMode(mode: 'monthly' | 'weekly'): void {
+    this.chartMode = mode;
+    this.updateCharts();
+  }
+
+  updateCharts(): void {
+    if (!this.viewReady) return;
+
+    const reports = this._reports();
+    this.drawRevenueChart(reports);
+    this.drawOccupancyChart(reports);
+  }
+
+  private buildRevenueSeries(reports: Report[]): RevenuePoint[] {
+    if (!reports || reports.length === 0) return [];
+
+    // groupBy fecha
+    const map = new Map<string, number>();
+
+    for (const r of reports) {
+      const date = r.createdAt; // yyyy-MM-dd
+      map.set(date, (map.get(date) ?? 0) + (r.totalRevenue ?? 0));
+    }
+
+    const series: RevenuePoint[] = Array.from(map.entries())
+      .map(([date, total]) => ({ date, totalRevenue: total }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    return series;
+  }
+
+  private drawRevenueChart(reports: Report[]): void {
+    const svgEl = this.revenueChartRef?.nativeElement;
+    if (!svgEl) return;
+
     const svg = d3.select(svgEl);
     svg.selectAll('*').remove();
 
-    const width = 600;
-    const height = 250;
-    const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+    const data = this.buildRevenueSeries(reports);
+    if (data.length === 0) {
+      return;
+    }
+
+    const margin = { top: 20, right: 20, bottom: 30, left: 60 };
+    const width = svgEl.clientWidth || 600;
+    const height = svgEl.clientHeight || 256;
+
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+
+    const parseDate = d3.timeParse('%Y-%m-%d');
 
     const x = d3
-      .scalePoint<string>()
-      .domain(data.map((d) => d.label))
-      .range([margin.left, width - margin.right]);
+      .scaleBand()
+      .domain(data.map((d) => d.date))
+      .range([0, chartWidth])
+      .padding(0.2);
 
-    const maxY = d3.max(data, (d) => d.value) || 0;
     const y = d3
       .scaleLinear()
-      .domain([0, maxY * 1.1])
-      .range([height - margin.bottom, margin.top]);
+      .domain([0, d3.max(data, (d) => d.totalRevenue) ?? 0])
+      .nice()
+      .range([chartHeight, 0]);
 
-    const lineGen = d3
-      .line<{ label: string; value: number }>()
-      .x((d) => x(d.label)!)
-      .y((d) => y(d.value))
-      .curve(d3.curveMonotoneX);
-
-    svg.attr('viewBox', `0 0 ${width} ${height}`);
-
-    svg
-      .append('path')
-      .datum(data)
-      .attr('fill', 'none')
-      .attr('stroke', '#2563eb')
-      .attr('stroke-width', 2)
-      .attr('d', lineGen);
-
-    svg
-      .selectAll('circle.point')
-      .data(data)
-      .enter()
-      .append('circle')
-      .attr('class', 'point')
-      .attr('cx', (d) => x(d.label)!)
-      .attr('cy', (d) => y(d.value))
-      .attr('r', 4)
-      .attr('fill', '#2563eb');
-
-    svg
+    const g = svg
       .append('g')
-      .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(x).tickSizeOuter(0))
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Ejes
+    g.append('g')
+      .attr('transform', `translate(0,${chartHeight})`)
+      .call(
+        d3.axisBottom(x).tickFormat((d) => {
+          const dt = parseDate(String(d));
+          if (!dt) return String(d);
+          return d3.timeFormat('%b %d')(dt);
+        }) as any
+      )
       .selectAll('text')
-      .attr('fill', '#6b7280')
-      .style('font-size', '10px');
+      .style('font-size', '10px')
+      .style('fill', '#6b7280');
 
-    svg
-      .append('g')
-      .attr('transform', `translate(${margin.left},0)`)
+    g.append('g')
       .call(
         d3
           .axisLeft(y)
           .ticks(5)
-          .tickFormat((d) => d3.format('$~s')(d as number))
+          .tickFormat((v) =>
+            d3.format('~s')(Number(v)).replace('G', 'B').replace('M', 'M')
+          ) as any
       )
-      .call((g) =>
-        g.selectAll('text').attr('fill', '#6b7280').style('font-size', '10px')
-      )
-      .call((g) => g.selectAll('line').attr('stroke', '#e5e7eb'))
-      .call((g) => g.select('.domain').attr('stroke', '#9ca3af'));
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#6b7280');
+
+    // Barras
+    g.selectAll('.bar')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('class', 'bar')
+      .attr('x', (d) => x(d.date) ?? 0)
+      .attr('y', (d) => y(d.totalRevenue))
+      .attr('width', x.bandwidth())
+      .attr('height', (d) => chartHeight - y(d.totalRevenue))
+      .attr('fill', '#f59e0b'); // amber-500
   }
 
-  private renderOccupancyChart() {
-    const occ = this.occupancyData();
-    const pieData = [
-      { label: 'Occupied', value: occ.occupied, color: '#2563eb' },
-      { label: 'Available', value: occ.available, color: '#d1d5db' },
-    ];
+  private buildOccupancySnapshot(reports: Report[]): OccupancySnapshot {
+    if (!reports || reports.length === 0) {
+      return { occupiedPercentage: 0, availablePercentage: 100 };
+    }
 
-    const svgEl = this.occupancyChart!.nativeElement;
+    const totalReservations = reports.reduce(
+      (sum, r) => sum + (r.totalReservations ?? 0),
+      0
+    );
+    const days = new Set(reports.map((r) => r.createdAt)).size || 1;
+    const avgReservationsPerDay = totalReservations / days;
+
+    // Sin total de rooms, tomamos un techo razonable (ejemplo: 100),
+    // para tener una métrica relativa pero basada 100% en datos reales.
+    const logicalMaxRooms = 100;
+    let occupiedPct = (avgReservationsPerDay / logicalMaxRooms) * 100;
+
+    if (!isFinite(occupiedPct) || occupiedPct < 0) occupiedPct = 0;
+    if (occupiedPct > 100) occupiedPct = 100;
+
+    return {
+      occupiedPercentage: occupiedPct,
+      availablePercentage: 100 - occupiedPct,
+    };
+  }
+
+  private drawOccupancyChart(reports: Report[]): void {
+    const svgEl = this.occupancyChartRef?.nativeElement;
+    if (!svgEl) return;
+
     const svg = d3.select(svgEl);
     svg.selectAll('*').remove();
 
-    const width = 300;
-    const height = 250;
-    const radius = Math.min(width, height) / 2;
+    const occ = this.buildOccupancySnapshot(reports);
 
-    const arcGen = d3
-      .arc<d3.PieArcDatum<(typeof pieData)[number]>>()
-      .innerRadius(0)
-      .outerRadius(radius - 10);
-
-    const pieGen = d3.pie<(typeof pieData)[number]>().value((d) => d.value);
+    const width = svgEl.clientWidth || 400;
+    const height = svgEl.clientHeight || 256;
+    const radius = Math.min(width, height) / 2 - 10;
 
     const g = svg
-      .attr('viewBox', `0 0 ${width} ${height}`)
       .append('g')
-      .attr('transform', `translate(${width / 2}, ${height / 2})`);
+      .attr('transform', `translate(${width / 2},${height / 2})`);
 
-    const arcs = g
-      .selectAll('g.slice')
-      .data(pieGen(pieData))
+    const data = [
+      { label: 'Occupied', value: occ.occupiedPercentage, color: '#3b82f6' }, // blue-500
+      { label: 'Available', value: occ.availablePercentage, color: '#e5e7eb' }, // gray-200
+    ];
+
+    const pie = d3
+      .pie<{ label: string; value: number; color: string }>()
+      .sort(null)
+      .value((d) => d.value);
+
+    const arcGen = d3
+      .arc<d3.PieArcDatum<{ label: string; value: number; color: string }>>()
+      .innerRadius(radius * 0.6)
+      .outerRadius(radius);
+
+    g.selectAll('path')
+      .data(pie(data))
       .enter()
-      .append('g')
-      .attr('class', 'slice');
-
-    arcs
       .append('path')
       .attr('d', arcGen as any)
       .attr('fill', (d) => d.data.color);
 
-    // texto central
+    // Texto central
     g.append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
       .attr('fill', '#1f2937') // gray-800
       .style('font-size', '16px')
       .style('font-weight', '600')
-      .text(`${occ.occupied}%`);
+      .text(`${occ.occupiedPercentage.toFixed(0)}%`);
+  }
+
+  // ---------------- Handlers desde el template ----------------
+
+  updateChartsFromUI(): void {
+    this.loadDataForCurrentRange();
+  }
+
+  onSearchChange(term: string): void {
+    this.searchTerm.set(term);
+  }
+
+  // ---------------- Helpers ----------------
+
+  formatCurrency(value: number | null | undefined): string {
+    const num = value ?? 0;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(num);
+  }
+
+  formatDate(isoString: string | null | undefined): string {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    return d.toLocaleString();
   }
 }

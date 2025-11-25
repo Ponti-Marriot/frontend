@@ -20,6 +20,8 @@ import { NgOptimizedImage } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { LoginService } from '../../../../core/services/login.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { EmpleadoDTO } from '../../../../core/models/EmpleadoDTO';
@@ -45,7 +47,6 @@ export interface UnifiedAuthConfig {
   backToSigninText?: string;
 }
 
-
 export function passwordMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const newPassword = control.get('newPassword');
@@ -61,6 +62,18 @@ export function passwordMatchValidator(): ValidatorFn {
   };
 }
 
+// Validador personalizado para formato de email
+export function emailValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) {
+      return null;
+    }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const valid = emailRegex.test(control.value);
+    return valid ? null : { invalidEmail: true };
+  };
+}
+
 @Component({
   standalone: true,
   selector: 'app-signin-form',
@@ -71,7 +84,9 @@ export function passwordMatchValidator(): ValidatorFn {
     PasswordModule,
     ButtonModule,
     NgOptimizedImage,
+    ToastModule,
   ],
+  providers: [MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './signin-form.component.html',
 })
@@ -111,8 +126,13 @@ export class SigninFormComponent implements OnInit {
 
   usuario!: EmpleadoDTO;
 
-  constructor(private fb: FormBuilder, private loginService: LoginService,
-    private authService: AuthService, private router: Router) {}
+  constructor(
+    private fb: FormBuilder,
+    private loginService: LoginService,
+    private authService: AuthService,
+    private router: Router,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit(): void {
     this.updateFormByMode();
@@ -124,13 +144,19 @@ export class SigninFormComponent implements OnInit {
 
     if (this.mode === 'signin') {
       this.authForm = this.fb.group({
-        username: ['', [Validators.required, Validators.minLength(1)]],
+        username: [
+          '',
+          [Validators.required, Validators.minLength(1), emailValidator()],
+        ],
         password: ['', [Validators.required, Validators.minLength(1)]],
       });
     } else {
       this.authForm = this.fb.group(
         {
-          email: ['', [Validators.required, Validators.email]],
+          email: [
+            '',
+            [Validators.required, Validators.email, emailValidator()],
+          ],
           newPassword: ['', [Validators.required, Validators.minLength(6)]],
           confirmPassword: ['', [Validators.required]],
         },
@@ -146,28 +172,128 @@ export class SigninFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    const correo = this.authForm.get('username')?.value; // <-- Aquí está el usuario
-    const contrasena = this.authForm.get('password')?.value; // <-- Aquí está la contraseña
+    // Validar el formulario antes de enviar
+    if (this.authForm.invalid) {
+      this.markFormGroupTouched(this.authForm);
+      this.showValidationErrors();
+      return;
+    }
 
+    const correo = this.authForm.get('username')?.value;
+    const contrasena = this.authForm.get('password')?.value;
 
     if (this.authForm.valid) {
-      this.usuario;
       this.loginService.login(correo, contrasena).subscribe({
         next: (usuario) => {
           this.usuario = usuario;
           this.authService.setUsuario(usuario);
-          this.router.navigate(['/dashboard']);
+
+          // Toast de éxito
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Login Successful',
+            detail: `Welcome back, ${usuario.empleado?.nombre || 'User'}!`,
+            life: 3000,
+          });
+
+          // Navegar después de un pequeño delay para que se vea el toast
+          setTimeout(() => {
+            this.router.navigate(['/dashboard']);
+          }, 500);
         },
         error: (err) => {
-          //alert('Login failed: ' + err.message);
-          this.authForm.hasError('passwordMismatch')
-        }
+          // Determinar el tipo de error
+          const errorMessage = this.getErrorMessage(err);
+
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Login Failed',
+            detail: errorMessage,
+            life: 4000,
+          });
+        },
       });
+
       this.submitForm.emit({
         mode: this.mode,
         data: this.authForm.value,
       });
     }
+  }
+
+  private getErrorMessage(err: any): string {
+    // Verificar si es error de credenciales
+    if (err.status === 401 || err.status === 403) {
+      return 'Invalid email or password. Please try again.';
+    }
+
+    // Verificar si es error de formato de email
+    if (this.authForm.get('username')?.hasError('invalidEmail')) {
+      return 'Please enter a valid email address.';
+    }
+
+    // Error de red o servidor
+    if (err.status === 0) {
+      return 'Unable to connect to the server. Please check your internet connection.';
+    }
+
+    if (err.status >= 500) {
+      return 'Server error. Please try again later.';
+    }
+
+    // Mensaje genérico o del servidor
+    return (
+      err.error?.message ||
+      err.message ||
+      'An unexpected error occurred. Please try again.'
+    );
+  }
+
+  private showValidationErrors(): void {
+    const usernameControl = this.authForm.get('username');
+    const passwordControl = this.authForm.get('password');
+
+    if (usernameControl?.invalid) {
+      if (usernameControl.hasError('required')) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Validation Error',
+          detail: 'Email is required',
+          life: 3000,
+        });
+      } else if (
+        usernameControl.hasError('invalidEmail') ||
+        usernameControl.hasError('email')
+      ) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Validation Error',
+          detail: 'Please enter a valid email address',
+          life: 3000,
+        });
+      }
+    } else if (
+      passwordControl?.invalid &&
+      passwordControl.hasError('required')
+    ) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Password is required',
+        life: 3000,
+      });
+    }
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach((key) => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
   }
 
   get isFormInvalid(): boolean {

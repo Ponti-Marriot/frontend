@@ -1,6 +1,9 @@
 <div
   class="flex flex-col justify-center min-h-screen px-6 py-12 lg:px-12 bg-slate-950"
 >
+  <!-- Toast Component -->
+  <p-toast position="top-right" />
+
   <div class="w-full max-w-md mx-auto">
     <!-- Logo -->
     <div class="mb-8 flex justify-center">
@@ -37,7 +40,31 @@
           formControlName="username"
           [placeholder]="config.usernamePlaceholder"
           class="!w-full !bg-slate-800/50 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !transition-all"
+          [class.!ring-red-500]="
+            authForm.get('username')?.invalid &&
+            authForm.get('username')?.touched
+          "
         />
+        <!-- Error messages for username -->
+        <p
+          *ngIf="
+            authForm.get('username')?.hasError('required') &&
+            authForm.get('username')?.touched
+          "
+          class="text-sm text-red-400 mt-1"
+        >
+          Email is required
+        </p>
+        <p
+          *ngIf="
+            (authForm.get('username')?.hasError('invalidEmail') ||
+              authForm.get('username')?.hasError('email')) &&
+            authForm.get('username')?.touched
+          "
+          class="text-sm text-red-400 mt-1"
+        >
+          Please enter a valid email address
+        </p>
       </div>
 
       <!-- Email Field (solo para change password) -->
@@ -52,7 +79,20 @@
           formControlName="email"
           [placeholder]="config.emailPlaceholder"
           class="!w-full !bg-slate-800/50 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !transition-all"
+          [class.!ring-red-500]="
+            authForm.get('email')?.invalid && authForm.get('email')?.touched
+          "
         />
+        <p
+          *ngIf="
+            (authForm.get('email')?.hasError('invalidEmail') ||
+              authForm.get('email')?.hasError('email')) &&
+            authForm.get('email')?.touched
+          "
+          class="text-sm text-red-400 mt-1"
+        >
+          Please enter a valid email address
+        </p>
       </div>
 
       <!-- Password Field (solo para signin) -->
@@ -68,6 +108,15 @@
           inputStyleClass="!w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12"
           styleClass="w-full [&_.p-password]:w-full [&_.p-password]:relative [&_button]:!text-white [&_button]:!bg-transparent [&_button]:!border-0 [&_button]:!absolute [&_button]:!right-3 [&_button]:!top-1/2 [&_button]:!-translate-y-1/2 [&_button]:!w-8 [&_button]:!h-8 [&_button]:hover:!ring-indigo-500 [&_button]:!rounded [&_button]:!transition-colors [&_button_.pi]:!text-base"
         />
+        <p
+          *ngIf="
+            authForm.get('password')?.hasError('required') &&
+            authForm.get('password')?.touched
+          "
+          class="text-sm text-red-400 mt-1"
+        >
+          Password is required
+        </p>
       </div>
 
       <!-- New Password Field (solo para change password) -->
@@ -120,8 +169,6 @@
           {{ config.submitLabel }}
         </button>
       </div>
-
-
     </form>
   </div>
 </div>

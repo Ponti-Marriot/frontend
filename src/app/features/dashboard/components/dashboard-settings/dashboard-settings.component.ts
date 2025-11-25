@@ -58,21 +58,21 @@ interface ReservationRow {
 })
 export class SettingsComponent {
   private _hotels = signal<HotelOption[]>([
-    { label: 'BogotÃ¡ Â· Centro', value: 'bog-centro', region: 'BogotÃ¡' },
-    { label: 'BogotÃ¡ Â· Aeropuerto', value: 'bog-airport', region: 'BogotÃ¡' },
+    { label: 'Bogotá · Centro', value: 'bog-centro', region: 'Bogotá' },
+    { label: 'Bogotá · Aeropuerto', value: 'bog-airport', region: 'Bogotá' },
     {
-      label: 'MedellÃ­n Â· Poblado',
+      label: 'Medellín · Poblado',
       value: 'med-poblado',
-      region: 'MedellÃ­n',
+      region: 'Medellín',
     },
     {
-      label: 'Cartagena Â· Bocagrande',
+      label: 'Cartagena · Bocagrande',
       value: 'ctg-bocagrande',
       region: 'Cartagena',
     },
   ]);
 
-  selectedRegionSig = signal<string>('BogotÃ¡');
+  selectedRegionSig = signal<string>('Bogotá');
 
   selectedHotelSig = signal<string>('bog-centro');
   selectedHotel = this.selectedHotelSig();
@@ -101,7 +101,7 @@ export class SettingsComponent {
     {
       id: 'standard',
       type: 'Standard',
-      description: 'HabitaciÃ³n bÃ¡sica con cama queen, Wi-Fi y escritorio.',
+      description: 'Habitación básica con cama queen, Wi-Fi y escritorio.',
       ratePerNight: 280000,
       totalRooms: 34,
       available: 12,
@@ -121,7 +121,7 @@ export class SettingsComponent {
       id: 'suite-premium',
       type: 'Suite Premium',
       description:
-        'Suite con sala privada, minibar y balcÃ³n. OpciÃ³n ejecutiva.',
+        'Suite con sala privada, minibar y balcón. Opción ejecutiva.',
       ratePerNight: 680000,
       totalRooms: 6,
       available: 1,
@@ -137,7 +137,7 @@ export class SettingsComponent {
       status: 'occupied',
       floor: 3,
       notes: 'Cliente corporativo, checkout 28 Oct',
-      region: 'BogotÃ¡',
+      region: 'Bogotá',
       hotelId: 'bog-centro',
     },
     {
@@ -147,7 +147,7 @@ export class SettingsComponent {
       status: 'reserved',
       floor: 3,
       notes: 'Check-in 27 Oct 15:00',
-      region: 'BogotÃ¡',
+      region: 'Bogotá',
       hotelId: 'bog-centro',
     },
     {
@@ -157,7 +157,7 @@ export class SettingsComponent {
       status: 'available',
       floor: 12,
       notes: 'Listo, housekeeping OK',
-      region: 'BogotÃ¡',
+      region: 'Bogotá',
       hotelId: 'bog-airport',
     },
     {
@@ -166,12 +166,12 @@ export class SettingsComponent {
       typeId: 'standard',
       status: 'available',
       floor: 5,
-      region: 'MedellÃ­n',
+      region: 'Medellín',
       hotelId: 'med-poblado',
     },
   ]);
 
-  // reservas (tabla)
+  // Reservas (tabla)
   private _reservations = signal<ReservationRow[]>([
     {
       id: 'res-1001',
@@ -183,12 +183,12 @@ export class SettingsComponent {
       checkOut: '2025-10-28',
       status: 'checked_in',
       total: 840000,
-      region: 'BogotÃ¡',
+      region: 'Bogotá',
       hotelId: 'bog-centro',
     },
     {
       id: 'res-1002',
-      guest: 'Juan MartÃ­nez',
+      guest: 'Juan Martínez',
       avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Juan%20Martinez',
       roomType: 'Double Deluxe',
       room: '306',
@@ -196,12 +196,12 @@ export class SettingsComponent {
       checkOut: '2025-10-29',
       status: 'upcoming',
       total: 560000,
-      region: 'BogotÃ¡',
+      region: 'Bogotá',
       hotelId: 'bog-centro',
     },
     {
       id: 'res-1003',
-      guest: 'MarÃ­a LÃ³pez',
+      guest: 'María López',
       avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Maria%20Lopez',
       roomType: 'Suite Premium',
       room: '1208',
@@ -209,7 +209,7 @@ export class SettingsComponent {
       checkOut: '2025-10-23',
       status: 'checked_out',
       total: 2040000,
-      region: 'BogotÃ¡',
+      region: 'Bogotá',
       hotelId: 'bog-airport',
     },
     {
@@ -221,7 +221,7 @@ export class SettingsComponent {
       checkOut: '2025-10-26',
       status: 'checked_in',
       total: 560000,
-      region: 'MedellÃ­n',
+      region: 'Medellín',
       hotelId: 'med-poblado',
     },
   ]);
@@ -244,7 +244,7 @@ export class SettingsComponent {
     ).length;
     const occupied = roomsInHotel.filter((r) => r.status === 'occupied').length;
 
-    // tarifa promedio
+    // Tarifa promedio
     let acc = 0;
     let n = 0;
     for (const r of roomsInHotel) {
@@ -313,7 +313,7 @@ export class SettingsComponent {
     });
   });
 
-  // paginaciÃ³n
+  // Paginación
   currentPageSig = signal<number>(1);
   pageSize = 10;
 
@@ -327,7 +327,7 @@ export class SettingsComponent {
   }
 
   pageRange() {
-    // devuelve [1,2,...,N] para iterar en el template
+    // Devuelve [1,2,...,N] para iterar en el template
     const totalPages = this.getTotalPages();
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
@@ -339,7 +339,7 @@ export class SettingsComponent {
     return this.reservations().slice(start, end);
   });
 
-  // guest stats / wallet / room stats (para las secciones inferiores)
+  // Guest stats / wallet / room stats (para las secciones inferiores)
   guestStats = signal([
     {
       title: 'Total Guests',
@@ -433,7 +433,7 @@ export class SettingsComponent {
     this.currentPageSig.set(page);
   }
 
-  // handlers dropdown
+  // Handlers dropdown
   onHotelChange(newHotel: string) {
     this.selectedHotelSig.set(newHotel);
     this.syncLoadingPulse();
@@ -449,11 +449,11 @@ export class SettingsComponent {
     this.syncLoadingPulse();
   }
 
-  // cambiar regiÃ³n
+  // Cambiar región
   changeRegion(region: string) {
     this.selectedRegionSig.set(region);
 
-    // re-map hotel si cambia de regiÃ³n
+    // Re-map hotel si cambia de región
     const firstHotel = this.hotelOptions()[0];
     if (firstHotel) {
       this.selectedHotelSig.set(firstHotel.value);

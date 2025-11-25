@@ -4,9 +4,11 @@ import {
   OnInit,
   signal,
   computed,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { KeycloakService } from '../../core/services/keycloack.service';
 import { DashboardOverviewComponent } from './components/dashboard-overview/dashboard-overview.component';
 import { DashboardHeaderComponent } from './components/dashboard-header/dashboard-header.component';
 import {
@@ -15,7 +17,6 @@ import {
 } from './components/dashboard-sidebar/dashboard-sidebar.component';
 import { DashboardReservationsComponent } from './components/dashboard-reservations/dashboard-reservations.component';
 import { DashboardRoomsComponent } from './components/dashboard-rooms/dashboard-rooms.component';
-import { DashboardGuestsComponent } from './components/dashboard-guests/dashboard-guests.component';
 import { DashboardPaymentsComponent } from './components/dashboard-payments/dashboard-payments.component';
 import { DashboardReportsComponent } from './components/dashboard-reports/dashboard-reports.component';
 import { SettingsComponent } from './components/dashboard-settings/dashboard-settings.component';
@@ -23,7 +24,6 @@ import { SettingsComponent } from './components/dashboard-settings/dashboard-set
 type DashboardView =
   | 'overview'
   | 'reservations'
-  | 'guests'
   | 'rooms'
   | 'payments'
   | 'reports'
@@ -39,7 +39,6 @@ type DashboardView =
     DashboardSidebarComponent,
     DashboardReservationsComponent,
     DashboardRoomsComponent,
-    DashboardGuestsComponent,
     DashboardPaymentsComponent,
     DashboardReportsComponent,
     SettingsComponent,
@@ -48,11 +47,14 @@ type DashboardView =
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
+  private router = inject(Router);
+  private keycloakService = inject(KeycloakService);
+
   currentView = signal<DashboardView>('overview');
 
   currentUser = signal({
-    name: 'Ramon Ridwan',
-    role: 'Administrator',
+    name: 'Usuario',
+    role: 'User',
     avatar: '/images/lebroun.jpeg',
   });
 
@@ -64,21 +66,14 @@ export class DashboardComponent implements OnInit {
       icon: 'reservations',
       active: false,
     },
-    { id: 'guests', label: 'Guests', icon: 'guests', active: false },
     { id: 'rooms', label: 'Rooms', icon: 'rooms', active: false },
     { id: 'payments', label: 'Payments', icon: 'payments', active: false },
     { id: 'reports', label: 'Reports', icon: 'reports', active: false },
-    {
-      id: 'account',
-      label: 'Settings',
-      icon: 'settings',
-      active: false,
-    },
+    { id: 'account', label: 'Room Settings', icon: 'account', active: false },
   ]);
 
   isOverview = computed(() => this.currentView() === 'overview');
   isReservations = computed(() => this.currentView() === 'reservations');
-  isGuests = computed(() => this.currentView() === 'guests');
   isRooms = computed(() => this.currentView() === 'rooms');
   isPayments = computed(() => this.currentView() === 'payments');
   isReports = computed(() => this.currentView() === 'reports');
@@ -86,22 +81,24 @@ export class DashboardComponent implements OnInit {
 
   mobileMenuOpen = signal(false);
 
-  constructor(private router: Router) {}
-
   ngOnInit(): void {
-    this.loadInitialData();
+    const userName = this.keycloakService.getUserName();
+    const role = this.keycloakService.hasRole('admin')
+      ? 'Administrator'
+      : 'User';
+
+    this.currentUser.set({
+      name: userName,
+      role: role,
+      avatar: '/images/lebroun.jpeg',
+    });
   }
 
   changeView(viewId: string): void {
     this.currentView.set(viewId as DashboardView);
-
     this.menuItems.update((items) =>
-      items.map((item) => ({
-        ...item,
-        active: item.id === viewId,
-      }))
+      items.map((item) => ({ ...item, active: item.id === viewId }))
     );
-
     if (this.mobileMenuOpen()) {
       this.toggleMobileMenu();
     }
@@ -111,19 +108,22 @@ export class DashboardComponent implements OnInit {
     this.mobileMenuOpen.update((state) => !state);
   }
 
-  private loadInitialData(): void {
-    console.log('Dashboard initialized');
+  onMenuItemSelected(item: MenuItem): void {
+    this.changeView(item.id);
+  }
+
+  onMenuToggle(): void {
+    this.toggleMobileMenu();
   }
 
   logout(): void {
-    this.router.navigate(['/signin']);
+    this.keycloakService.logout();
   }
 
   getCurrentTitle(): string {
     const titles: Record<DashboardView, string> = {
       overview: 'Dashboard',
       reservations: 'Reservations Management',
-      guests: 'Guests Management',
       rooms: 'Rooms Management',
       payments: 'Payments',
       reports: 'Reports & Analytics',
@@ -136,7 +136,6 @@ export class DashboardComponent implements OnInit {
     const subtitles: Record<DashboardView, string> = {
       overview: 'Resume of the platform',
       reservations: 'Manage and monitor all hotel reservations',
-      guests: 'View and manage guests',
       rooms: 'Manage hotel rooms',
       payments: 'Track all transactions',
       reports: 'View detailed analytics',

@@ -1,259 +1,211 @@
-// src/app/core/services/dashboard/rooms.service.ts
-
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { backUrl } from '../models/URL/back';
+
 import {
   Room,
+  RoomFilters,
   RoomStats,
-  RoomStatus,
   RoomTypeStats,
   RoomReservation,
-  RoomFilters,
+  AvailabilityDates,
+  RoomService as RoomServiceModel,
   PaginationData,
-  Hotel,
-  BedType,
+  RoomStatus,
 } from '../models/rooms.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RoomsService {
-  private mockRooms: Room[] = this.generateMockRooms();
-  private mockHotels: Hotel[] = this.generateMockHotels();
+  private readonly apiUrl = `${backUrl}/api`;
 
-  getStats(): Observable<RoomStats> {
-    const stats: RoomStats = {
-      totalRooms: 248,
-      available: 186,
-      occupied: 62,
-      avgRatePerNight: 320,
-    };
-    return of(stats).pipe(delay(300));
-  }
+  constructor(private http: HttpClient) {}
 
-  getRoomTypeStats(): Observable<RoomTypeStats[]> {
-    const stats: RoomTypeStats[] = [
-      {
-        type: 'Single Room',
-        totalRooms: 82,
-        available: 64,
-        ratePerNight: 180,
-        image:
-          'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400',
-        description: 'Perfect for solo travelers',
-      },
-      {
-        type: 'Double Room',
-        totalRooms: 122,
-        available: 89,
-        ratePerNight: 280,
-        image:
-          'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400',
-        description: 'Perfect for solo travelers',
-      },
-      {
-        type: 'Family Suit',
-        totalRooms: 42,
-        available: 33,
-        ratePerNight: 480,
-        image:
-          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400',
-        description: 'Perfect for solo travelers',
-      },
-    ];
-    return of(stats).pipe(delay(300));
-  }
-
-  getRecentReservations(): Observable<RoomReservation[]> {
-    const reservations: RoomReservation[] = [
-      {
-        id: '1',
-        guest: 'Ramon Ridwan',
-        roomType: 'Double Room',
-        room: 'Suite 501 - Family',
-        checkIn: new Date('2024-01-15'),
-        checkOut: new Date('2024-01-18'),
-        status: 'Confirmed',
-        total: 840,
-      },
-      {
-        id: '2',
-        guest: 'Ramon Ridwan',
-        roomType: 'Single Room',
-        room: 'Suite 501 - Family',
-        checkIn: new Date('2024-01-15'),
-        checkOut: new Date('2024-01-18'),
-        status: 'Processing',
-        total: 360,
-      },
-      {
-        id: '3',
-        guest: 'Ramon Ridwan',
-        roomType: 'Single Room',
-        room: 'Suite 501 - Family',
-        checkIn: new Date('2024-01-15'),
-        checkOut: new Date('2024-01-18'),
-        status: 'Confirmed',
-        total: 180,
-      },
-      {
-        id: '4',
-        guest: 'Ramon Ridwan',
-        roomType: 'Family Room',
-        room: 'Suite 501 - Family',
-        checkIn: new Date('2024-01-15'),
-        checkOut: new Date('2024-01-18'),
-        status: 'Canceled',
-        total: 1250,
-      },
-    ];
-    return of(reservations).pipe(delay(300));
-  }
-
-  getHotels(): Observable<Hotel[]> {
-    return of(this.mockHotels).pipe(delay(300));
-  }
+  // ---- Read rooms from backend ----
 
   getRooms(
     filters: RoomFilters,
     pagination: PaginationData
   ): Observable<{ data: Room[]; pagination: PaginationData }> {
-    let filtered = [...this.mockRooms];
+    return this.http.get<Room[]>(`${this.apiUrl}/rooms`).pipe(
+      map((rooms) => {
+        const filtered = this.applyRoomFilters(rooms, filters);
+        const { data, pagination: pag } = this.applyPagination(
+          filtered,
+          pagination
+        );
+        return { data, pagination: pag };
+      })
+    );
+  }
 
-    // Apply filters
-    if (filters.hotel) {
-      filtered = filtered.filter((r) => r.hotel.id === filters.hotel);
+  getRoomById(id: string): Observable<Room | null> {
+    return this.http
+      .get<Room>(`${this.apiUrl}/rooms/${id}`)
+      .pipe(map((room) => room ?? null));
+  }
+
+  getRoomsByHotel(hotelId: string): Observable<Room[]> {
+    return this.http.get<Room[]>(`${this.apiUrl}/hotels/${hotelId}/rooms`);
+  }
+
+  getRoomAvailability(roomId: string): Observable<AvailabilityDates[]> {
+    return this.http.get<AvailabilityDates[]>(
+      `${this.apiUrl}/rooms/${roomId}/availability`
+    );
+  }
+
+  getRoomServices(roomId: string): Observable<RoomServiceModel[]> {
+    return this.http.get<RoomServiceModel[]>(
+      `${this.apiUrl}/rooms/${roomId}/services`
+    );
+  }
+
+  // ---- Stats built on real data ----
+
+  getStats(): Observable<RoomStats> {
+    return this.http.get<Room[]>(`${this.apiUrl}/rooms`).pipe(
+      map((rooms) => {
+        const totalRooms = rooms.length;
+
+        const available = rooms.filter((r) =>
+          this.matchesStatus(r.status, RoomStatus.AVAILABLE)
+        ).length;
+
+        const occupied = rooms.filter((r) =>
+          this.matchesStatus(r.status, RoomStatus.OCCUPIED)
+        ).length;
+
+        const reserved = rooms.filter((r) =>
+          this.matchesStatus(r.status, RoomStatus.RESERVED)
+        ).length;
+
+        const avgRatePerNight =
+          rooms.reduce((sum, r) => sum + (r.price ?? 0), 0) /
+          (rooms.length || 1);
+
+        return {
+          totalRooms,
+          available,
+          occupied,
+          reserved,
+          avgRatePerNight,
+        };
+      })
+    );
+  }
+
+  getRoomTypeStats(): Observable<RoomTypeStats[]> {
+    return this.http.get<Room[]>(`${this.apiUrl}/rooms`).pipe(
+      map((rooms) => {
+        const statsMap = new Map<string, RoomTypeStats>();
+
+        rooms.forEach((room) => {
+          const typeName = room.roomType?.name ?? 'Unknown';
+          const key = room.roomType?.id ?? typeName;
+          const entry = statsMap.get(key) ?? {
+            type: typeName,
+            count: 0,
+            totalRooms: 0,
+            ratePerNight: 0,
+          };
+          entry.count += 1;
+          entry.totalRooms += 1;
+          entry.ratePerNight += room.price ?? 0;
+          statsMap.set(key, entry);
+        });
+
+        return Array.from(statsMap.values()).map((s) => ({
+          ...s,
+          ratePerNight: s.ratePerNight / (s.count || 1),
+        }));
+      })
+    );
+  }
+
+  // Opcional si implementas un endpoint:
+  // GET /api/rooms/recent-reservations
+  getRecentReservations(): Observable<RoomReservation[]> {
+    return this.http.get<RoomReservation[]>(
+      `${this.apiUrl}/rooms/recent-reservations`
+    );
+  }
+
+  // ---- Filtering & pagination helpers ----
+
+  private applyRoomFilters(rooms: Room[], filters: RoomFilters): Room[] {
+    let result = [...rooms];
+
+    if (filters.region && filters.region !== 'all') {
+      result = result.filter((r) => r.hotel?.region === filters.region);
+    }
+
+    if (filters.hotel && filters.hotel !== 'all') {
+      result = result.filter((r) => r.hotel?.id === filters.hotel);
     }
 
     if (filters.status && filters.status !== 'all') {
-      filtered = filtered.filter((r) => r.status === filters.status);
-    }
-
-    if (filters.roomType && filters.roomType !== 'all') {
-      filtered = filtered.filter((r) => r.roomType.name === filters.roomType);
-    }
-
-    if (filters.floor && filters.floor !== 'all') {
-      filtered = filtered.filter((r) => r.floor === filters.floor);
-    }
-
-    if (filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.roomNumber.toLowerCase().includes(term) ||
-          r.roomType.name.toLowerCase().includes(term)
+      result = result.filter((r) =>
+        this.matchesStatus(r.status, filters.status!)
       );
     }
 
-    // Pagination
-    const totalItems = filtered.length;
-    const totalPages = Math.ceil(totalItems / pagination.pageSize);
-    const start = (pagination.page - 1) * pagination.pageSize;
-    const end = start + pagination.pageSize;
-    const data = filtered.slice(start, end);
-
-    return of({
-      data,
-      pagination: { ...pagination, totalItems, totalPages },
-    }).pipe(delay(500));
-  }
-
-  updateRoomStatus(id: string, status: RoomStatus): Observable<Room> {
-    const room = this.mockRooms.find((r) => r.id === id);
-    if (room) {
-      room.status = status;
-      room.updatedAt = new Date();
+    if (filters.roomType && filters.roomType !== 'all') {
+      result = result.filter((r) => r.roomType?.id === filters.roomType);
     }
-    return of(room!).pipe(delay(500));
+
+    if (filters.floor && filters.floor !== 'all') {
+      result = result.filter((r) => r.floor === filters.floor);
+    }
+
+    if (filters.searchTerm && filters.searchTerm.trim().length > 0) {
+      const term = filters.searchTerm.toLowerCase();
+      result = result.filter((r) => {
+        return (
+          (r.roomNumber ?? '').toLowerCase().includes(term) ||
+          (r.title ?? '').toLowerCase().includes(term) ||
+          (r.description ?? '').toLowerCase().includes(term) ||
+          (r.hotel?.name ?? '').toLowerCase().includes(term) ||
+          (r.roomType?.name ?? '').toLowerCase().includes(term)
+        );
+      });
+    }
+
+    return result;
   }
 
-  private generateMockHotels(): Hotel[] {
-    return [
-      {
-        id: 'hotel-1',
-        name: 'Ponti Marriott New York',
-        city: 'New York',
-        country: 'USA',
-        address: '123 Manhattan Ave',
-        totalRooms: 150,
+  private applyPagination<T>(
+    items: T[],
+    pagination: PaginationData
+  ): { data: T[]; pagination: PaginationData } {
+    const totalItems = items.length;
+    const totalPages = Math.ceil(totalItems / pagination.pageSize || 1);
+    const currentPage = Math.max(1, Math.min(pagination.page, totalPages));
+
+    const start = (currentPage - 1) * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    const data = items.slice(start, end);
+
+    return {
+      data,
+      pagination: {
+        ...pagination,
+        page: currentPage,
+        totalItems,
+        totalPages,
       },
-      {
-        id: 'hotel-2',
-        name: 'Ponti Marriott Los Angeles',
-        city: 'Los Angeles',
-        country: 'USA',
-        address: '456 Hollywood Blvd',
-        totalRooms: 98,
-      },
-    ];
+    };
   }
 
-  private generateMockRooms(): Room[] {
-    const statuses = Object.values(RoomStatus);
-    const roomTypes = [
-      {
-        id: '1',
-        name: 'Single Room',
-        description: 'Perfect for solo travelers',
-        basePrice: 180,
-        image: '',
-        features: ['WiFi', 'TV', 'AC'],
-      },
-      {
-        id: '2',
-        name: 'Double Room',
-        description: 'Ideal for couples',
-        basePrice: 280,
-        image: '',
-        features: ['WiFi', 'TV', 'AC', 'Mini Bar'],
-      },
-      {
-        id: '3',
-        name: 'Family Suit',
-        description: 'Spacious for families',
-        basePrice: 480,
-        image: '',
-        features: ['WiFi', 'TV', 'AC', 'Kitchen', 'Living Room'],
-      },
-    ];
-
-    return Array.from({ length: 248 }, (_, i) => {
-      const roomType = roomTypes[Math.floor(Math.random() * roomTypes.length)];
-      const floor = Math.floor(Math.random() * 15) + 1;
-      const roomNum = `${floor}${(Math.floor(Math.random() * 20) + 1)
-        .toString()
-        .padStart(2, '0')}`;
-      const hotel =
-        this.mockHotels[Math.floor(Math.random() * this.mockHotels.length)];
-
-      return {
-        id: `room-${i + 1}`,
-        roomNumber: roomNum,
-        roomType,
-        hotel,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        floor,
-        price: roomType.basePrice,
-        capacity:
-          roomType.name === 'Single Room'
-            ? 1
-            : roomType.name === 'Double Room'
-            ? 2
-            : 4,
-        beds: {
-          type: roomType.name === 'Single Room' ? BedType.SINGLE : BedType.KING,
-          quantity: roomType.name === 'Family Suit' ? 2 : 1,
-        },
-        amenities: roomType.features,
-        images: [roomType.image],
-        description: roomType.description,
-        size: Math.floor(Math.random() * 30) + 20,
-        view: Math.random() > 0.5 ? 'City View' : 'Ocean View',
-        lastCleaned: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    });
+  private matchesStatus(
+    actual: RoomStatus | string | undefined,
+    expected: RoomStatus | string
+  ): boolean {
+    if (!actual) return false;
+    const a = String(actual).toLowerCase();
+    const e = String(expected).toLowerCase();
+    return a === e;
   }
 }

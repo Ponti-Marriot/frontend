@@ -309,63 +309,75 @@
             *ngFor="let room of rooms()"
             class="hover:bg-gray-50 transition-colors"
           >
+            <!-- Room -->
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <div
                   class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white"
                   [ngClass]="{
-                    'bg-blue-500': room.status === 'available',
-                    'bg-green-500': room.status === 'occupied',
-                    'bg-yellow-500': room.status === 'reserved',
-                    'bg-gray-500': room.status === 'maintenance'
+                    'bg-blue-500': room.status === 'Available',
+                    'bg-green-500': room.status === 'Occupied',
+                    'bg-yellow-500': room.status === 'Reserved',
+                    'bg-gray-500': room.status === 'Maintenance'
                   }"
                 >
-                  {{ room.number }}
+                  {{ room.roomNumber || "—" }}
                 </div>
                 <div>
                   <p class="text-sm font-semibold text-gray-900">
-                    Room {{ room.number }}
+                    Room {{ room.roomNumber || room.title || "N/A" }}
                   </p>
                   <p class="text-xs text-gray-500">{{ room.id }}</p>
                 </div>
               </div>
             </td>
 
+            <!-- Type -->
             <td class="px-6 py-4">
               <p class="text-sm font-semibold text-gray-900">
-                {{ getRoomTypeName(room.typeId) }}
+                {{ room.roomType?.name || "—" }}
               </p>
               <p class="text-xs text-gray-500">
-                {{ getRoomTypeDescription(room.typeId) }}
+                {{ room.roomType?.description || "" }}
               </p>
             </td>
 
+            <!-- Location / Hotel -->
             <td class="px-6 py-4">
-              <p class="text-sm text-gray-900">{{ room.region }}</p>
+              <p class="text-sm text-gray-900">
+                {{ room.hotel?.region || room.hotel?.locationName || "—" }}
+              </p>
               <p class="text-xs text-gray-500">
-                {{ getHotelName(room.hotelId) }}
+                {{ room.hotel?.name || "" }}
               </p>
             </td>
 
+            <!-- Floor -->
             <td class="px-6 py-4 text-sm text-gray-600">
-              Floor {{ room.floor }}
+              {{ room.floor || "—" }}
             </td>
 
+            <!-- Rate/Night -->
             <td class="px-6 py-4 text-sm font-semibold text-gray-900">
-              {{ formatCurrency(getRoomRate(room.typeId)) }}
+              {{ formatCurrency(room.price) }}
             </td>
 
+            <!-- Status -->
             <td class="px-6 py-4">
               <span
                 class="px-3 py-1 text-xs font-semibold rounded-full"
                 [class]="getStatusClass(room.status)"
               >
-                {{ room.status }}
+                {{ room.status || "—" }}
               </span>
             </td>
 
+            <!-- Current Guest -->
             <td class="px-6 py-4">
-              <div *ngIf="room.currentGuest" class="flex items-center gap-2">
+              <div
+                *ngIf="room.currentGuest; else noGuest"
+                class="flex items-center gap-2"
+              >
                 <img
                   [src]="
                     'https://api.dicebear.com/7.x/initials/svg?seed=' +
@@ -381,11 +393,12 @@
                   </p>
                 </div>
               </div>
-              <span *ngIf="!room.currentGuest" class="text-sm text-gray-400">
-                —
-              </span>
+              <ng-template #noGuest>
+                <span class="text-sm text-gray-400">—</span>
+              </ng-template>
             </td>
 
+            <!-- Actions -->
             <td class="px-6 py-4 text-right">
               <div class="flex justify-end gap-2">
                 <button
@@ -403,7 +416,7 @@
                   <i class="pi pi-pencil text-sm"></i>
                 </button>
                 <button
-                  *ngIf="room.status === 'available'"
+                  *ngIf="room.status === 'Available'"
                   (click)="markAsOccupied(room)"
                   class="w-8 h-8 rounded-full flex items-center justify-center bg-yellow-100 hover:bg-yellow-200 text-yellow-600 transition-colors"
                   title="Mark as occupied"
@@ -411,7 +424,7 @@
                   <i class="pi pi-user text-sm"></i>
                 </button>
                 <button
-                  *ngIf="room.status === 'occupied'"
+                  *ngIf="room.status === 'Occupied'"
                   (click)="markAsAvailable(room)"
                   class="w-8 h-8 rounded-full flex items-center justify-center bg-green-100 hover:bg-green-200 text-green-600 transition-colors"
                   title="Mark as available"
