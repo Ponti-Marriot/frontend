@@ -19,7 +19,7 @@ import { DashboardReservationsComponent } from './components/dashboard-reservati
 import { DashboardRoomsComponent } from './components/dashboard-rooms/dashboard-rooms.component';
 import { DashboardPaymentsComponent } from './components/dashboard-payments/dashboard-payments.component';
 import { DashboardReportsComponent } from './components/dashboard-reports/dashboard-reports.component';
-import { SettingsComponent } from './components/dashboard-settings/dashboard-settings.component';
+import { DashboardSettingsComponent } from './components/dashboard-settings/dashboard-settings.component';
 
 type DashboardView =
   | 'overview'
@@ -41,7 +41,7 @@ type DashboardView =
     DashboardRoomsComponent,
     DashboardPaymentsComponent,
     DashboardReportsComponent,
-    SettingsComponent,
+    DashboardSettingsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',

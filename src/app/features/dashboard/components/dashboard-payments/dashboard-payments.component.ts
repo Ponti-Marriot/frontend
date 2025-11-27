@@ -6,7 +6,6 @@ import { DropdownModule } from 'primeng/dropdown';
 import {
   Payment,
   PaymentFilters,
-  PaymentStats,
   PaginationData,
   PaymentStatus,
 } from '../../models/payment.model';
@@ -28,8 +27,6 @@ interface StatCard {
   templateUrl: './dashboard-payments.component.html',
 })
 export class DashboardPaymentsComponent implements OnInit {
-  private paymentsService = new PaymentsService(null as any); // if you use DI via inject(), replace this line
-
   // ---- State (signals) ----
   readonly payments = signal<Payment[]>([]);
   readonly currentPage = signal<number>(1);
@@ -42,9 +39,7 @@ export class DashboardPaymentsComponent implements OnInit {
   readonly selectedMethod = signal<string>('all');
   readonly selectedDateRange = signal<string>('all');
 
-  readonly stats = signal<PaymentStats | null>(null);
-
-  // ---- Options for filters ----
+  // ---- Options para filtros ----
   statusOptions = [
     { label: 'All statuses', value: 'all' },
     { label: 'Completed', value: PaymentStatus.COMPLETED },
@@ -54,7 +49,6 @@ export class DashboardPaymentsComponent implements OnInit {
     { label: 'Cancelled', value: PaymentStatus.CANCELLED },
   ];
 
-  // Por ahora el método no existe en tu Payment real, así que es decorativo
   methodOptions = [
     { label: 'All methods', value: 'all' },
     { label: 'Not specified', value: 'none' },
@@ -67,14 +61,15 @@ export class DashboardPaymentsComponent implements OnInit {
     { label: 'Last 30 days', value: '30d' },
   ];
 
-  // ---- Stat cards computed from stats ----
+  // ---- Tarjetas de stats calculadas a partir de payments() ----
   readonly statCards = computed<StatCard[]>(() => {
-    const s = this.stats();
-    if (!s) {
+    const list = this.payments();
+
+    if (!list || list.length === 0) {
       return [
         {
           title: 'Total Revenue',
-          value: '$0',
+          value: '$0.00',
           change: 'No data yet',
           trend: null,
           color: 'blue',
@@ -107,49 +102,64 @@ export class DashboardPaymentsComponent implements OnInit {
       ];
     }
 
+    const normalize = (s: string | undefined | null) => (s ?? '').toLowerCase();
+
+    const totalRevenue = list
+      .filter((p) => normalize(p.paymentStatus) === PaymentStatus.COMPLETED)
+      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+
+    const completed = list.filter(
+      (p) => normalize(p.paymentStatus) === PaymentStatus.COMPLETED
+    ).length;
+
+    const pending = list.filter(
+      (p) => normalize(p.paymentStatus) === PaymentStatus.PENDING
+    ).length;
+
+    const failed = list.filter((p) => {
+      const st = normalize(p.paymentStatus);
+      return st === PaymentStatus.FAILED || st === PaymentStatus.CANCELLED;
+    }).length;
+
     return [
       {
         title: 'Total Revenue',
-        value: this.formatCurrency(s.totalRevenue),
+        value: this.formatCurrency(totalRevenue),
         change: '',
-        trend: 'up',
+        trend: totalRevenue > 0 ? 'up' : null,
         color: 'blue',
         icon: 'dollar',
       },
       {
         title: 'Completed Payments',
-        value: s.completed.toString(),
+        value: completed.toString(),
         change: '',
-        trend: 'up',
+        trend: completed > 0 ? 'up' : null,
         color: 'green',
         icon: 'check-circle',
       },
       {
         title: 'Pending Payments',
-        value: s.pending.toString(),
+        value: pending.toString(),
         change: '',
-        trend: s.pending > 0 ? 'down' : null,
+        trend: pending > 0 ? 'down' : null,
         color: 'yellow',
         icon: 'clock',
       },
       {
         title: 'Failed Payments',
-        value: s.failed.toString(),
+        value: failed.toString(),
         change: '',
-        trend: s.failed > 0 ? 'down' : null,
+        trend: failed > 0 ? 'down' : null,
         color: 'red',
         icon: 'times-circle',
       },
     ];
   });
 
-  constructor(private readonly _paymentsService: PaymentsService) {
-    // Proper Angular DI
-    this.paymentsService = _paymentsService;
-  }
+  constructor(private readonly paymentsService: PaymentsService) {}
 
   ngOnInit(): void {
-    this.loadStats();
     this.loadPayments();
   }
 
@@ -176,8 +186,7 @@ export class DashboardPaymentsComponent implements OnInit {
       return { start, end };
     }
 
-    // 'all' or unknown
-    return undefined;
+    return undefined; // all
   }
 
   private loadPayments(): void {
@@ -208,16 +217,6 @@ export class DashboardPaymentsComponent implements OnInit {
         this.payments.set([]);
         this.totalItems.set(0);
         this.totalPages.set(1);
-      },
-    });
-  }
-
-  private loadStats(): void {
-    this.paymentsService.getPaymentStats().subscribe({
-      next: (stats) => this.stats.set(stats),
-      error: (err) => {
-        console.error('Error loading payment stats', err);
-        this.stats.set(null);
       },
     });
   }
@@ -264,9 +263,7 @@ export class DashboardPaymentsComponent implements OnInit {
   }
 
   onPageChange(page: number): void {
-    if (page < 1 || page > this.totalPages()) {
-      return;
-    }
+    if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
     this.loadPayments();
   }
@@ -285,24 +282,19 @@ export class DashboardPaymentsComponent implements OnInit {
     let start = Math.max(2, current - 1);
     let end = Math.min(total - 1, current + 1);
 
-    if (start > 2) {
-      pages.push(-1); // ellipsis
-    }
+    if (start > 2) pages.push(-1);
 
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
 
-    if (end < total - 1) {
-      pages.push(-1); // ellipsis
-    }
+    if (end < total - 1) pages.push(-1);
 
     pages.push(total);
-
     return pages;
   }
 
-  // ---- Actions (de momento, solo placeholders/logs) ----
+  // ---- Actions (por ahora solo logs) ----
 
   viewDetails(payment: Payment): void {
     console.log('View details for payment', payment);
@@ -320,7 +312,7 @@ export class DashboardPaymentsComponent implements OnInit {
     console.log('Cancel payment (TODO REST endpoint)', payment);
   }
 
-  // ---- Helpers for template ----
+  // ---- Helpers para template ----
 
   formatCurrency(value: number | null | undefined): string {
     const num = value ?? 0;

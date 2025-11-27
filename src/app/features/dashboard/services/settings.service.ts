@@ -3,7 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { backUrl } from '../models/URL/back';
 import { HotelProperty, Location } from '../models/settings.model';
-import { Room, RoomFilters, PaginationData } from '../models/rooms.model';
+import {
+  Room,
+  RoomFilters,
+  PaginationData,
+  CreateRoomRequest,
+} from '../models/rooms.model';
 
 @Injectable({
   providedIn: 'root',
@@ -28,7 +33,8 @@ export class SettingsService {
   // ---- Rooms grouped by hotel ----
 
   getRoomsByHotel(hotelId: string): Observable<Room[]> {
-    return this.http.get<Room[]>(`${this.apiUrl}/hotels/${hotelId}/rooms`);
+    // ahora el endpoint es /rooms/hotel/{hotelId}
+    return this.http.get<Room[]>(`${this.apiUrl}/rooms/hotel/${hotelId}`);
   }
 
   getRooms(
@@ -45,6 +51,23 @@ export class SettingsService {
         return { data, pagination: pag };
       })
     );
+  }
+
+  // ---- CRUD Rooms ----
+
+  createRoom(hotelId: string, payload: CreateRoomRequest): Observable<Room> {
+    return this.http.post<Room>(
+      `${this.apiUrl}/rooms/hotel/${hotelId}`,
+      payload
+    );
+  }
+
+  updateRoom(roomId: string, payload: CreateRoomRequest): Observable<Room> {
+    return this.http.put<Room>(`${this.apiUrl}/rooms/${roomId}`, payload);
+  }
+
+  deleteRoom(roomId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/rooms/${roomId}`);
   }
 
   // ---- Locations ----
@@ -74,15 +97,12 @@ export class SettingsService {
       result = result.filter((r) => r.status === filters.status);
     }
 
-    // By room type (now ALWAYS RoomType)
+    // By room type (ahora es string, no objeto)
     if (filters.roomType && filters.roomType !== 'all') {
-      result = result.filter((r) => r.roomType?.id === filters.roomType);
+      result = result.filter((r) => r.roomType === filters.roomType);
     }
 
-    // By floor
-    if (filters.floor && filters.floor !== 'all') {
-      result = result.filter((r) => r.floor === filters.floor);
-    }
+    // (Se elimina filtro por floor porque RoomFilters ya no tiene 'floor')
 
     // By search
     if (filters.searchTerm?.trim()) {

@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
 
 // D3
 import * as d3 from 'd3';
@@ -58,7 +59,7 @@ interface ReportTransactionRow {
 @Component({
   selector: 'app-dashboard-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule],
+  imports: [CommonModule, FormsModule, SelectModule, ButtonModule],
   templateUrl: './dashboard-reports.component.html',
 })
 export class DashboardReportsComponent implements OnInit, AfterViewInit {
@@ -88,7 +89,7 @@ export class DashboardReportsComponent implements OnInit, AfterViewInit {
   ];
   selectedRange: DateRangeOption['value'] = '30d';
 
-  // Modo de gráfica
+  // Modo de gráfica (por ahora solo afecta los botones / future use)
   chartMode: 'monthly' | 'weekly' = 'monthly';
 
   // Transacciones filtradas por buscador
@@ -153,8 +154,8 @@ export class DashboardReportsComponent implements OnInit, AfterViewInit {
     // 1) Reports agregados
     this.reportsService.getReports(range).subscribe({
       next: (reports) => {
-        this._reports.set(reports);
-        this.updateStatsFromReports(reports);
+        this._reports.set(reports ?? []);
+        this.updateStatsFromReports(reports ?? []);
         this.updateCharts();
       },
       error: (err) => {
@@ -186,7 +187,7 @@ export class DashboardReportsComponent implements OnInit, AfterViewInit {
 
     this.paymentsService.getPayments(filters, pagination).subscribe({
       next: (result) => {
-        const payments = result.data ?? [];
+        const payments: Payment[] = result.data ?? [];
 
         // Ordenar por fecha (desc) y mapear a filas de reporte
         const sorted = [...payments].sort((a, b) => {
@@ -431,7 +432,7 @@ export class DashboardReportsComponent implements OnInit, AfterViewInit {
     const avgReservationsPerDay = totalReservations / days;
 
     // Sin total de rooms, tomamos un techo razonable (ejemplo: 100),
-    // para tener una métrica relativa pero basada 100% en datos reales.
+    // para tener una métrica relativa pero basada en datos reales.
     const logicalMaxRooms = 100;
     let occupiedPct = (avgReservationsPerDay / logicalMaxRooms) * 100;
 

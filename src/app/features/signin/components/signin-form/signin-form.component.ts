@@ -5,6 +5,7 @@ import {
   Input,
   OnInit,
   Output,
+  ChangeDetectorRef,
 } from '@angular/core';
 import {
   AbstractControl,
@@ -62,7 +63,6 @@ export function passwordMatchValidator(): ValidatorFn {
   };
 }
 
-// Validador personalizado para formato de email
 export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control.value) {
@@ -102,9 +102,9 @@ export class SigninFormComponent implements OnInit {
 
   private signinConfig: UnifiedAuthConfig = {
     title: 'Welcome to PontiMarriot 👋',
-    subtitle: 'Kindly fill in your details below to create an account',
+    subtitle: 'Kindly fill in your details below to sign in',
     usernameLabel: 'Username',
-    usernamePlaceholder: 'Enter your full username',
+    usernamePlaceholder: 'Enter your email address',
     passwordLabel: 'Password',
     passwordPlaceholder: 'Enter your password',
     submitLabel: 'Sign in',
@@ -112,7 +112,7 @@ export class SigninFormComponent implements OnInit {
   };
 
   private changePasswordConfig: UnifiedAuthConfig = {
-    title: 'Change Password 🔑',
+    title: 'Change Password 🔐',
     subtitle: 'Enter your email and new password',
     emailLabel: 'Email',
     emailPlaceholder: 'Enter your email',
@@ -131,7 +131,8 @@ export class SigninFormComponent implements OnInit {
     private loginService: LoginService,
     private authService: AuthService,
     private router: Router,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -182,57 +183,52 @@ export class SigninFormComponent implements OnInit {
     const correo = this.authForm.get('username')?.value;
     const contrasena = this.authForm.get('password')?.value;
 
-    if (this.authForm.valid) {
-      this.loginService.login(correo, contrasena).subscribe({
-        next: (usuario) => {
-          this.usuario = usuario;
-          this.authService.setUsuario(usuario);
+    this.loginService.login(correo, contrasena).subscribe({
+      next: (usuario) => {
+        this.usuario = usuario;
+        this.authService.setUsuario(usuario);
 
-          // Toast de éxito
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Login Successful',
-            detail: `Welcome back, ${usuario.empleado?.nombre || 'User'}!`,
-            life: 3000,
-          });
+        // Toast de éxito
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Login Successful',
+          detail: `Welcome back, ${usuario.empleado?.nombre || 'User'}!`,
+          life: 3000,
+        });
 
-          // Navegar después de un pequeño delay para que se vea el toast
-          setTimeout(() => {
-            this.router.navigate(['/dashboard']);
-          }, 500);
-        },
-        error: (err) => {
-          // Determinar el tipo de error
-          const errorMessage = this.getErrorMessage(err);
+        // Forzar detección de cambios
+        this.cdr.detectChanges();
 
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Login Failed',
-            detail: errorMessage,
-            life: 4000,
-          });
-        },
-      });
+        // Navegar después de un pequeño delay
+        setTimeout(() => {
+          this.router.navigate(['/dashboard']);
+        }, 500);
+      },
+      error: (err) => {
+        const errorMessage = this.getErrorMessage(err);
 
-      this.submitForm.emit({
-        mode: this.mode,
-        data: this.authForm.value,
-      });
-    }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Login Failed',
+          detail: errorMessage,
+          life: 4000,
+        });
+
+        // Forzar detección de cambios
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   private getErrorMessage(err: any): string {
-    // Verificar si es error de credenciales
     if (err.status === 401 || err.status === 403) {
       return 'Invalid email or password. Please try again.';
     }
 
-    // Verificar si es error de formato de email
     if (this.authForm.get('username')?.hasError('invalidEmail')) {
       return 'Please enter a valid email address.';
     }
 
-    // Error de red o servidor
     if (err.status === 0) {
       return 'Unable to connect to the server. Please check your internet connection.';
     }
@@ -241,7 +237,6 @@ export class SigninFormComponent implements OnInit {
       return 'Server error. Please try again later.';
     }
 
-    // Mensaje genérico o del servidor
     return (
       err.error?.message ||
       err.message ||
@@ -283,6 +278,9 @@ export class SigninFormComponent implements OnInit {
         life: 3000,
       });
     }
+
+    // Forzar detección de cambios
+    this.cdr.detectChanges();
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {

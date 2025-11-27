@@ -1,5 +1,3 @@
-// Mapea la vista reports_dashboard del backend:
-// id, hotel_id, created_at, total_reservations, total_revenue, avg_price_per_night
 export interface Report {
   id: string;
   hotelId: string | null;

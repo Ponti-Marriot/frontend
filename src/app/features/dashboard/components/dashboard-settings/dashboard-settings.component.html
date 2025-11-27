@@ -1,383 +1,121 @@
 <div class="space-y-6">
-  <!-- Región / Hotel / Add Room -->
+  <!-- Región / Hotel / Add room -->
   <div
     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
   >
-    <!-- Región + info -->
-    <div class="flex flex-col sm:flex-row sm:items-start gap-6">
-      <div>
+    <!-- Región y hotel -->
+    <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+      <!-- Region -->
+      <div class="min-w-[180px]">
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Region
         </p>
-        <div
-          class="text-gray-900 font-bold text-lg flex flex-wrap items-center gap-2"
-        >
-          {{ selectedRegionSig() }}
-
-          <button
-            class="text-[11px] px-2 py-1 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
-            (click)="changeRegion('Bogotá')"
-          >
-            Bogotá
-          </button>
-          <button
-            class="text-[11px] px-2 py-1 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
-            (click)="changeRegion('Medellín')"
-          >
-            Medellín
-          </button>
-          <button
-            class="text-[11px] px-2 py-1 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
-            (click)="changeRegion('Cartagena')"
-          >
-            Cartagena
-          </button>
-        </div>
-
-        <p class="text-xs text-gray-500 mt-1 max-w-xs">
-          Gestiona disponibilidad, tarifas y ocupación hotel por hotel.
-        </p>
-      </div>
-
-      <!-- Hotel dropdown -->
-      <div class="text-sm flex flex-col">
-        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">
-          Hotel
-        </label>
-
-        <p-dropdown
-          [options]="hotelOptions()"
-          [(ngModel)]="selectedHotel"
+        <p-select
+          [options]="regionOptions"
+          [(ngModel)]="selectedRegion"
+          placeholder="Select region"
           optionLabel="label"
           optionValue="value"
-          [showClear]="false"
-          styleClass="w-56"
+          styleClass="w-full custom-dropdown"
+          (onChange)="onRegionChange($event.value)"
+        ></p-select>
+      </div>
+
+      <!-- Hotel -->
+      <div class="min-w-[220px]">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Hotel
+        </p>
+        <p-select
+          [options]="hotelOptions"
+          [(ngModel)]="selectedHotelId"
+          placeholder="Select hotel"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full custom-dropdown"
           (onChange)="onHotelChange($event.value)"
-        ></p-dropdown>
+        ></p-select>
       </div>
     </div>
 
-    <!-- Add room -->
+    <!-- Botón "Add room" mejorado -->
     <div class="flex justify-end">
       <button
-        pButton
         type="button"
-        label="Add new room"
-        icon="pi pi-plus"
-        class="p-button-warning"
-        style="background-color: #eab308; border-color: #eab308"
-        (click)="createRoom()"
-      ></button>
-    </div>
-  </div>
-
-  <!-- === KPI / Stats Cards (usa stats()) === -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div
-      *ngFor="let stat of stats()"
-      class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-    >
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <p class="text-sm font-medium text-gray-600">
-            {{ stat.title }}
-          </p>
-
-          <p class="text-2xl font-bold text-gray-900 mt-2">
-            {{ stat.value }}
-          </p>
-
-          <p
-            class="text-xs mt-2 flex items-center gap-1"
-            [class.text-green-600]="stat.trend === 'up'"
-            [class.text-red-600]="stat.trend === 'down'"
-          >
-            <!-- flecha up -->
-            <svg
-              *ngIf="stat.trend === 'up'"
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-              />
-            </svg>
-
-            <!-- flecha down -->
-            <svg
-              *ngIf="stat.trend === 'down'"
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-              />
-            </svg>
-
-            <span>{{ stat.change }}</span>
-          </p>
-        </div>
-
-        <div
-          [class]="
-            stat.iconColor +
-            ' w-12 h-12 rounded-lg flex items-center justify-center'
-          "
+        (click)="openCreateModal()"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-sm font-semibold text-slate-950 shadow-sm hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+      >
+        <span
+          class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-950/10"
         >
-          <!-- Íconos -->
-          <svg
-            *ngIf="stat.icon === 'building'"
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-            />
-          </svg>
-
-          <svg
-            *ngIf="stat.icon === 'check-circle'"
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-
-          <svg
-            *ngIf="stat.icon === 'home'"
-            class="w-6 h-6"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.7-6.3 4.7 2.3-7-6-4.6h7.6z"
-            />
-          </svg>
-
-          <svg
-            *ngIf="stat.icon === 'currency'"
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-      </div>
+          <i class="pi pi-plus text-[11px]"></i>
+        </span>
+        <span>Add room</span>
+      </button>
     </div>
   </div>
 
-  <!-- === Cards por tipo de habitación === -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div
-      *ngFor="let roomType of roomTypeStats()"
-      class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
-    >
-      <!-- Imagen -->
-      <div class="relative h-64 bg-gray-200">
-        <img
-          [src]="roomType.image"
-          [alt]="roomType.type"
-          class="w-full h-full object-cover"
-          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22 fill=%22%23e5e7eb%22%3E%3Crect width=%22400%22 height=%22300%22/%3E%3Cpath fill=%22%239ca3af%22 d=%22M150 100h100v50h-100z M175 150v30h50v-30z%22/%3E%3C/svg%3E'"
-        />
-      </div>
-
-      <!-- Info -->
-      <div class="p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-2">
-          {{ roomType.type }}
-        </h3>
-        <p class="text-sm text-gray-600 mb-4">{{ roomType.description }}</p>
-
-        <div class="grid grid-cols-3 gap-4 mb-4">
-          <div>
-            <p class="text-xs text-gray-500">Total rooms:</p>
-            <p class="font-semibold text-gray-900">
-              {{ roomType.totalRooms }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500">Available:</p>
-            <p class="font-semibold text-green-600">
-              {{ roomType.available }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500">Rate/Night:</p>
-            <p class="font-semibold text-yellow-600">
-              {{ formatCurrency(roomType.ratePerNight) }}
-            </p>
-          </div>
-        </div>
-
-        <div class="flex gap-2">
-          <button
-            pButton
-            type="button"
-            label="View Details"
-            icon="pi pi-eye"
-            class="p-button-sm flex-1"
-            style="background-color: #1e293b; border-color: #1e293b"
-            (click)="viewRoomDetails(roomType)"
-          ></button>
-
-          <button
-            pButton
-            type="button"
-            icon="pi pi-pencil"
-            class="p-button-sm p-button-outlined"
-            pTooltip="Edit"
-            tooltipPosition="top"
-            (click)="editRoom(roomType)"
-          ></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- === Tabla de reservas recientes === -->
+  <!-- Tabla de habitaciones -->
   <div
     class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
   >
-    <!-- Header / filtros -->
     <div
-      class="px-6 py-4 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      class="px-6 py-4 border-b border-gray-200 flex items-center justify-between"
     >
-      <h2 class="text-lg font-bold text-gray-900">Recent Room Reservations</h2>
+      <div>
+        <h2 class="text-sm font-semibold text-gray-900">
+          Rooms for selected hotel
+        </h2>
+        <p class="text-xs text-gray-500">
+          Manage room data directly from the database.
+        </p>
+      </div>
 
-      <div class="flex flex-col lg:flex-row lg:items-center flex-wrap gap-4">
-        <!-- Hotel -->
-        <div class="text-sm flex flex-col">
-          <span
-            class="block text-xs font-semibold text-gray-500 uppercase mb-1"
-          >
-            Hotel
-          </span>
-
-          <p-dropdown
-            [options]="hotelOptions()"
-            [(ngModel)]="selectedHotel"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="false"
-            styleClass="w-48"
-            (onChange)="onHotelChange($event.value)"
-          ></p-dropdown>
-        </div>
-
-        <!-- Status -->
-        <div class="text-sm flex flex-col">
-          <span
-            class="block text-xs font-semibold text-gray-500 uppercase mb-1"
-          >
-            Status
-          </span>
-
-          <p-dropdown
-            [options]="statusOptions"
-            [(ngModel)]="selectedStatus"
-            placeholder="All Status"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="false"
-            styleClass="w-40"
-            (onChange)="onStatusChange($event.value)"
-          ></p-dropdown>
-        </div>
-
-        <!-- Room Type -->
-        <div class="text-sm flex flex-col">
-          <span
-            class="block text-xs font-semibold text-gray-500 uppercase mb-1"
-          >
-            Room Type
-          </span>
-
-          <p-dropdown
-            [options]="roomTypeOptions"
-            [(ngModel)]="selectedRoomType"
-            placeholder="All Room Types"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="false"
-            styleClass="w-40"
-            (onChange)="onRoomTypeChange($event.value)"
-          ></p-dropdown>
-        </div>
+      <div
+        *ngIf="isLoading()"
+        class="inline-flex items-center gap-2 text-xs text-gray-500"
+      >
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        Loading rooms...
       </div>
     </div>
 
-    <!-- Table -->
     <div class="overflow-x-auto">
-      <table class="w-full">
+      <table class="w-full border-collapse">
         <thead class="bg-gray-50 border-b border-gray-200">
           <tr>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Guest
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Room Type
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
             >
               Room
             </th>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
             >
-              Check-in
+              Type
             </th>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
             >
-              Check-out
+              Price / night
             </th>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+            >
+              Bedrooms
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+            >
+              Bathrooms
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
             >
               Status
             </th>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right"
-            >
-              Total
-            </th>
-            <th
-              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider"
             >
               Actions
             </th>
@@ -386,425 +124,403 @@
 
         <tbody class="divide-y divide-gray-200">
           <tr
-            *ngFor="let reservation of paginatedReservations()"
-            class="hover:bg-gray-50 transition-colors align-top"
+            *ngFor="let room of rooms()"
+            class="hover:bg-gray-50 transition-colors"
           >
-            <!-- Guest -->
-            <td class="px-6 py-4 whitespace-nowrap">
+            <!-- Room -->
+            <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <img
-                  [src]="reservation.avatar"
-                  [alt]="reservation.guest"
-                  class="w-10 h-10 rounded-full bg-gray-200 object-cover"
-                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23cbd5e1%22%3E%3Cpath d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/%3E%3C/svg%3E'"
-                />
-
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-gray-900">
-                    {{ reservation.guest }}
-                  </span>
-                  <span class="text-[11px] leading-tight text-gray-500">
-                    {{ reservation.id }}
-                  </span>
+                <div
+                  class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white uppercase"
+                  [ngClass]="{
+                    'bg-blue-500': room.status === 'Available',
+                    'bg-green-500': room.status === 'Occupied',
+                    'bg-yellow-500': room.status === 'Reserved',
+                    'bg-gray-500': room.status === 'Maintenance'
+                  }"
+                >
+                  {{ getRoomInitial(room.roomType) }}
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900">
+                    {{ room.title || "Room " + (room.roomNumber || "N/A") }}
+                  </p>
+                  <p class="text-[11px] text-gray-500">
+                    {{ room.hotel?.name || "" }}
+                  </p>
                 </div>
               </div>
             </td>
 
-            <!-- Room Type -->
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-              {{ reservation.roomType }}
+            <!-- Type -->
+            <td class="px-6 py-4 text-sm text-gray-700">
+              {{ room.roomType || "—" }}
             </td>
 
-            <!-- Room -->
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-              <div class="font-semibold text-gray-800">
-                #{{ reservation.room }}
-              </div>
-              <div class="text-[11px] text-gray-500">
-                {{ reservation.region }} / {{ reservation.hotelId }}
-              </div>
+            <!-- Price -->
+            <td class="px-6 py-4 text-sm font-semibold text-gray-900">
+              {{ formatCurrency(room.price) }}
             </td>
 
-            <!-- Check-in -->
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-              {{ reservation.checkIn | date : "MMM d, y" }}
+            <!-- Bedrooms -->
+            <td class="px-6 py-4 text-sm text-gray-700">
+              {{ room.bedrooms ?? "—" }}
             </td>
 
-            <!-- Check-out -->
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-              {{ reservation.checkOut | date : "MMM d, y" }}
+            <!-- Bathrooms -->
+            <td class="px-6 py-4 text-sm text-gray-700">
+              {{ room.bathrooms ?? "—" }}
             </td>
 
             <!-- Status -->
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-4">
               <span
-                class="px-3 py-1 text-xs font-semibold rounded-full inline-flex items-center gap-1"
-                [class]="getStatusClass(reservation.status)"
+                class="px-3 py-1 text-xs font-semibold rounded-full"
+                [class]="getStatusClass(room.status)"
               >
-                <i
-                  class="pi text-xs"
-                  [ngClass]="{
-                    'pi-sign-in': reservation.status === 'checked_in',
-                    'pi-clock': reservation.status === 'upcoming',
-                    'pi-check': reservation.status === 'checked_out',
-                    'pi-times': reservation.status === 'canceled'
-                  }"
-                ></i>
-
-                <span class="capitalize">
-                  {{ reservation.status.replace("_", " ") }}
-                </span>
+                {{ room.status || "—" }}
               </span>
             </td>
 
-            <!-- Total -->
-            <td
-              class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-right"
-            >
-              {{ formatCurrency(reservation.total) }}
-            </td>
-
             <!-- Actions -->
-            <td class="px-6 py-4 whitespace-nowrap text-right">
-              <div class="flex flex-row justify-end gap-2">
+            <td class="px-6 py-4 text-right">
+              <div class="flex justify-end gap-2">
+                <!-- Ver -->
                 <button
-                  pButton
                   type="button"
-                  icon="pi pi-check-circle"
-                  class="p-button-rounded p-button-text p-button-success p-button-sm"
-                  pTooltip="Mark Available"
-                  tooltipPosition="top"
-                  (click)="markAsAvailable('room-' + reservation.room)"
-                ></button>
+                  (click)="openViewModal(room)"
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors"
+                  title="View"
+                >
+                  <i class="pi pi-eye text-xs"></i>
+                </button>
 
+                <!-- Editar -->
                 <button
-                  pButton
                   type="button"
-                  icon="pi pi-user"
-                  class="p-button-rounded p-button-text p-button-warning p-button-sm"
-                  pTooltip="Mark Occupied"
-                  tooltipPosition="top"
-                  (click)="markAsOccupied('room-' + reservation.room)"
-                ></button>
+                  (click)="openEditModal(room)"
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors"
+                  title="Edit"
+                >
+                  <i class="pi pi-pencil text-xs"></i>
+                </button>
 
+                <!-- Eliminar -->
                 <button
-                  pButton
                   type="button"
-                  icon="pi pi-calendar"
-                  class="p-button-rounded p-button-text p-button-info p-button-sm"
-                  pTooltip="Mark Reserved"
-                  tooltipPosition="top"
-                  (click)="markAsReserved('room-' + reservation.room)"
-                ></button>
-
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-trash"
-                  class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                  pTooltip="Delete Room"
-                  tooltipPosition="top"
-                  (click)="deleteRoom('room-' + reservation.room)"
-                ></button>
+                  (click)="openDeleteConfirm(room)"
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                  title="Delete"
+                >
+                  <i class="pi pi-trash text-xs"></i>
+                </button>
               </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="!isLoading() && rooms().length === 0">
+            <td
+              colspan="7"
+              class="px-6 py-6 text-center text-sm text-gray-500 italic"
+            >
+              No rooms found for this hotel.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <!-- Pagination footer -->
-    <div
-      class="px-6 py-4 border-t border-gray-200 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <p class="text-sm text-gray-600">
-        Showing
-        {{ (currentPage() - 1) * pageSize + 1 }}
-        to
-        {{ min(currentPage() * pageSize, totalResults()) }}
-        of
-        {{ totalResults() }}
-        results
-      </p>
-
-      <div class="flex items-center gap-2">
-        <button
-          (click)="changePage(currentPage() - 1)"
-          [disabled]="currentPage() === 1"
-          class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Previous
-        </button>
-
-        <button
-          *ngFor="let page of pageRange()"
-          (click)="changePage(page)"
-          [class.bg-amber-500]="currentPage() === page"
-          [class.text-white]="currentPage() === page"
-          [class.bg-white]="currentPage() !== page"
-          [class.text-gray-700]="currentPage() !== page"
-          class="px-3 py-1 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50"
-        >
-          {{ page }}
-        </button>
-
-        <button
-          (click)="changePage(currentPage() + 1)"
-          [disabled]="currentPage() >= getTotalPages()"
-          class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Next
-        </button>
-      </div>
-    </div>
   </div>
 
-  <!-- === Guest Stats + Wallet Row === -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Guest Stats -->
-    <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+  <!-- MODAL: CREATE / EDIT / VIEW -->
+  <div
+    *ngIf="showModal()"
+    class="fixed inset-0 z-40 flex items-center justify-center"
+  >
+    <!-- Fondo opacado con backdrop blur -->
+    <div
+      class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      (click)="closeModal()"
+    ></div>
+
+    <div
+      class="relative z-50 bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 overflow-hidden"
+    >
+      <!-- Header -->
       <div
-        *ngFor="let stat of guestStats()"
-        class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+        class="px-6 py-4 border-b border-gray-200 flex items-center justify-between"
       >
-        <div class="flex flex-col items-center text-center gap-3">
-          <div
-            [class]="
-              stat.iconColor +
-              ' w-14 h-14 rounded-full flex items-center justify-center'
-            "
-          >
-            <!-- Íconos -->
-            <svg
-              *ngIf="stat.icon === 'users'"
-              class="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900">
+            {{
+              modalMode === "create"
+                ? "Create room"
+                : modalMode === "edit"
+                ? "Edit room"
+                : "Room details"
+            }}
+          </h3>
+          <p class="text-xs text-gray-500 mt-1">
+            {{
+              modalMode === "create"
+                ? "Select region and hotel, then fill in all fields required by the backend."
+                : modalMode === "edit"
+                ? "Update room fields and save."
+                : "Read-only view of room data."
+            }}
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+          aria-label="Close"
+        >
+          <i class="pi pi-times text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <form (ngSubmit)="saveRoom()" class="px-6 py-5 space-y-5">
+        <!-- Region & Hotel -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-xs font-semibold text-gray-500 uppercase mb-1"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <svg
-              *ngIf="stat.icon === 'user-check'"
-              class="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <svg
-              *ngIf="stat.icon === 'crown'"
-              class="w-7 h-7"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.7-6.3 4.7 2.3-7-6-4.6h7.6z"
-              />
-            </svg>
-            <svg
-              *ngIf="stat.icon === 'user-plus'"
-              class="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
+              Region
+            </label>
+            <p-select
+              [options]="regionOptions"
+              [(ngModel)]="roomForm.region"
+              name="modalRegion"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full custom-dropdown"
+              (onChange)="onModalRegionChange($event.value)"
+              [disabled]="modalMode === 'view'"
+            ></p-select>
           </div>
 
           <div>
-            <p class="text-sm font-medium text-gray-600">
-              {{ stat.title }}
-            </p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">
-              {{ stat.value }}
-            </p>
+            <label
+              class="block text-xs font-semibold text-gray-500 uppercase mb-1"
+            >
+              Hotel
+            </label>
+            <p-select
+              [options]="hotelOptions"
+              [(ngModel)]="roomForm.hotelPropertyId"
+              name="modalHotel"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full custom-dropdown"
+              (onChange)="onModalHotelChange($event.value)"
+              [disabled]="modalMode === 'view'"
+            ></p-select>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Wallet Card -->
-    <div
-      class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white relative overflow-hidden"
-    >
-      <div class="relative z-10">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-bold">Wallet</h3>
+        <!-- Title & Room type -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">
+              Title
+            </label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              [class.text-gray-400]="modalMode === 'view'"
+              [class.text-gray-900]="modalMode !== 'view'"
+              [(ngModel)]="roomForm.title"
+              name="title"
+              [disabled]="modalMode === 'view'"
+              placeholder="e.g. Room 101 - Standard"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">
+              Room type
+            </label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              [class.text-gray-400]="modalMode === 'view'"
+              [class.text-gray-900]="modalMode !== 'view'"
+              [(ngModel)]="roomForm.roomType"
+              name="roomType"
+              [disabled]="modalMode === 'view'"
+              placeholder="Single, Double, Family..."
+            />
+          </div>
+        </div>
+
+        <!-- Price / Bedrooms / Bathrooms -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">
+              Price per night
+            </label>
+            <input
+              type="number"
+              min="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              [class.text-gray-400]="modalMode === 'view'"
+              [class.text-gray-900]="modalMode !== 'view'"
+              [(ngModel)]="roomForm.pricePerNight"
+              name="pricePerNight"
+              [disabled]="modalMode === 'view'"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">
+              Bedrooms
+            </label>
+            <input
+              type="number"
+              min="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              [class.text-gray-400]="modalMode === 'view'"
+              [class.text-gray-900]="modalMode !== 'view'"
+              [(ngModel)]="roomForm.bedrooms"
+              name="bedrooms"
+              [disabled]="modalMode === 'view'"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">
+              Bathrooms
+            </label>
+            <input
+              type="number"
+              min="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              [class.text-gray-400]="modalMode === 'view'"
+              [class.text-gray-900]="modalMode !== 'view'"
+              [(ngModel)]="roomForm.bathrooms"
+              name="bathrooms"
+              [disabled]="modalMode === 'view'"
+            />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">
+            Description
+          </label>
+          <textarea
+            rows="3"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+            [class.text-gray-400]="modalMode === 'view'"
+            [class.text-gray-900]="modalMode !== 'view'"
+            [(ngModel)]="roomForm.description"
+            name="description"
+            [disabled]="modalMode === 'view'"
+            placeholder="Optional description of the room..."
+          ></textarea>
+        </div>
+
+        <!-- Footer -->
+        <div
+          class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3"
+        >
           <button
-            class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-semibold transition-colors backdrop-blur-sm"
+            type="button"
+            (click)="closeModal()"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Withdraw Funds
+            Close
+          </button>
+
+          <button
+            *ngIf="modalMode !== 'view'"
+            type="submit"
+            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 transition-colors"
+          >
+            <i class="pi pi-save text-xs"></i>
+            <span>
+              {{ modalMode === "create" ? "Create room" : "Save changes" }}
+            </span>
           </button>
         </div>
+      </form>
+    </div>
+  </div>
 
-        <!-- Trophy / badge -->
-        <div class="flex justify-center mb-6">
-          <div class="relative">
-            <div
-              class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center"
-            >
-              <svg
-                class="w-14 h-14 text-yellow-300"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                />
-              </svg>
-            </div>
-            <div class="absolute -top-2 -left-2">
-              <svg
-                class="w-6 h-6 text-yellow-400"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                />
-              </svg>
-            </div>
-            <div class="absolute -bottom-3 -right-3">
-              <svg
-                class="w-8 h-8 text-yellow-400"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
+  <!-- MODAL: DELETE CONFIRMATION -->
+  <div
+    *ngIf="showDeleteConfirm()"
+    class="fixed inset-0 z-40 flex items-center justify-center"
+  >
+    <!-- Fondo opacado con backdrop blur -->
+    <div
+      class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      (click)="closeDeleteConfirm()"
+    ></div>
 
-        <!-- Earnings / Balance -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <p class="text-xs text-gray-400 mb-1">Total Earnings</p>
-            <p class="text-xl font-bold">
-              ₦{{ walletEarnings().toLocaleString() }}.00
-            </p>
-            <p class="text-xs text-gray-400 mt-1">
-              Please note this is the total sum of your transaction here on
-              <span class="font-semibold">DOOR AFRICA</span>
-            </p>
+    <div
+      class="relative z-50 bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 overflow-hidden"
+    >
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Delete room?</h3>
+        <p class="text-sm text-gray-500 mt-1">
+          Are you sure you want to delete this room? This action cannot be
+          undone.
+        </p>
+      </div>
+
+      <!-- Body - Room info -->
+      <div class="px-6 py-4 bg-gray-50">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white uppercase"
+            [ngClass]="{
+              'bg-blue-500': roomToDelete()?.status === 'Available',
+              'bg-green-500': roomToDelete()?.status === 'Occupied',
+              'bg-yellow-500': roomToDelete()?.status === 'Reserved',
+              'bg-gray-500': roomToDelete()?.status === 'Maintenance'
+            }"
+          >
+            {{ getRoomInitial(roomToDelete()?.roomType) }}
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">Balance</p>
-            <p class="text-xl font-bold">
-              ₦{{ walletBalance().toLocaleString() }}.00
+            <p class="text-sm font-semibold text-gray-900">
+              {{
+                roomToDelete()?.title ||
+                  "Room " + (roomToDelete()?.roomNumber || "N/A")
+              }}
             </p>
-            <p class="text-xs text-gray-400 mt-1">
-              Please note this is the current balance amount left on your wallet
+            <p class="text-xs text-gray-500">
+              {{ roomToDelete()?.hotel?.name || "" }}
             </p>
           </div>
         </div>
       </div>
 
-      <!-- decor -->
+      <!-- Footer -->
       <div
-        class="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full -mr-16 -mt-16"
-      ></div>
-      <div
-        class="absolute bottom-0 left-0 w-24 h-24 bg-purple-400/10 rounded-full -ml-12 -mb-12"
-      ></div>
-    </div>
-  </div>
-
-  <!-- === Room Stats bottom === -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div
-      *ngFor="let stat of roomStats()"
-      class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
-    >
-      <div class="flex flex-col items-center text-center gap-3">
-        <div
-          [class]="
-            stat.iconColor +
-            ' w-14 h-14 rounded-full flex items-center justify-center'
-          "
+        class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3"
+      >
+        <button
+          type="button"
+          (click)="closeDeleteConfirm()"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <svg
-            *ngIf="stat.icon === 'building'"
-            class="w-7 h-7"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-            />
-          </svg>
-          <svg
-            *ngIf="stat.icon === 'check-circle'"
-            class="w-7 h-7"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <svg
-            *ngIf="stat.icon === 'home'"
-            class="w-7 h-7"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.7-6.3 4.7 2.3-7-6-4.6h7.6z"
-            />
-          </svg>
-          <svg
-            *ngIf="stat.icon === 'currency'"
-            class="w-7 h-7"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
+          Cancel
+        </button>
 
-        <div>
-          <p class="text-sm font-medium text-gray-600">
-            {{ stat.title }}
-          </p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">
-            <span *ngIf="stat.icon === 'currency'">$</span>{{ stat.value }}
-          </p>
-        </div>
+        <button
+          type="button"
+          (click)="confirmDelete()"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
+        >
+          <i class="pi pi-trash text-xs"></i>
+          <span>Delete room</span>
+        </button>
       </div>
     </div>
   </div>

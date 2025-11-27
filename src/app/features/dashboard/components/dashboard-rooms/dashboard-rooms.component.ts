@@ -1,4 +1,4 @@
-// src/app/dashboard/dashboard-rooms.component.ts
+// src/app/features/dashboard/components/dashboard-rooms/dashboard-rooms.component.ts
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,18 +20,14 @@ interface SelectOption {
 
 @Component({
   selector: 'app-dashboard-rooms',
-  standalone: true, // 👈 MUY IMPORTANTE
-  imports: [
-    CommonModule, // *ngIf, *ngFor, [ngClass]
-    FormsModule, // [(ngModel)]
-    SelectModule, // <p-select>
-  ],
+  standalone: true,
+  imports: [CommonModule, FormsModule, SelectModule],
   templateUrl: './dashboard-rooms.component.html',
 })
 export class DashboardRoomsComponent implements OnInit {
   constructor(private roomsService: RoomsService) {}
 
-  // ==== Signals ====
+  // ===== Signals =====
   rooms = signal<Room[]>([]);
 
   stats = signal<RoomStats>({
@@ -47,14 +43,18 @@ export class DashboardRoomsComponent implements OnInit {
   totalItems = signal(0);
   totalPages = signal(1);
 
-  // Filtros (ngModel)
+  // ===== Filtros (ngModel) =====
   searchTerm = '';
   selectedRegion = 'all';
   selectedHotel = 'all';
   selectedStatus: string = 'all';
   selectedRoomType: string = 'all';
 
-  // Opciones de filtros
+  // ===== Modal de detalles =====
+  showDetails = false;
+  selectedRoom: Room | null = null;
+
+  // ===== Opciones de filtros =====
   regionOptions: SelectOption[] = [{ label: 'All regions', value: 'all' }];
 
   statusOptions: SelectOption[] = [
@@ -65,6 +65,7 @@ export class DashboardRoomsComponent implements OnInit {
     { label: 'Maintenance', value: RoomStatus.MAINTENANCE },
   ];
 
+  // aquí roomType es un string (simple, doble, familiar)
   roomTypeOptions: SelectOption[] = [{ label: 'All room types', value: 'all' }];
 
   // Hotels se calculan dinámicamente a partir de rooms()
@@ -86,13 +87,13 @@ export class DashboardRoomsComponent implements OnInit {
     return opts;
   });
 
-  // ==== Lifecycle ====
+  // ===== Lifecycle =====
   ngOnInit(): void {
     this.loadStats();
     this.loadRooms();
   }
 
-  // ==== Loaders ====
+  // ===== Helpers para filtros/paginación =====
   private buildFilters(): RoomFilters {
     return {
       region: this.selectedRegion,
@@ -112,6 +113,7 @@ export class DashboardRoomsComponent implements OnInit {
     };
   }
 
+  // ===== Carga de datos =====
   private loadRooms(): void {
     const filters = this.buildFilters();
     const pagination = this.buildPagination();
@@ -147,7 +149,7 @@ export class DashboardRoomsComponent implements OnInit {
   private updateFilterOptionsFromRooms(): void {
     const rooms = this.rooms();
 
-    // Regions
+    // Regions (string coming from hotel.region)
     const regionSet = new Set<string>();
     rooms.forEach((r) => {
       if (r.hotel?.region) regionSet.add(r.hotel.region);
@@ -158,25 +160,19 @@ export class DashboardRoomsComponent implements OnInit {
       ...Array.from(regionSet).map((r) => ({ label: r, value: r })),
     ];
 
-    // Room types
-    const typeMap = new Map<string, string>();
+    // Room types (room.roomType es string)
+    const typeSet = new Set<string>();
     rooms.forEach((r) => {
-      if (r.roomType?.id) {
-        typeMap.set(r.roomType.id, r.roomType.name ?? r.roomType.id);
-      }
+      if (r.roomType) typeSet.add(r.roomType);
     });
 
     this.roomTypeOptions = [
       { label: 'All room types', value: 'all' },
-      ...Array.from(typeMap.entries()).map(([id, name]) => ({
-        label: name,
-        value: id,
-      })),
+      ...Array.from(typeSet).map((t) => ({ label: t, value: t })),
     ];
   }
 
-  // ==== Filtros / UI ====
-
+  // ===== Eventos de filtros =====
   onFilterChange(): void {
     this.currentPage.set(1);
     this.loadRooms();
@@ -192,8 +188,7 @@ export class DashboardRoomsComponent implements OnInit {
     this.loadRooms();
   }
 
-  // ==== Paginación ====
-
+  // ===== Paginación =====
   onPageChange(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
@@ -230,8 +225,7 @@ export class DashboardRoomsComponent implements OnInit {
     return Math.min(a, b);
   }
 
-  // ==== Helpers de template ====
-
+  // ===== Helpers de template =====
   formatCurrency(amount: number | undefined): string {
     const num = amount ?? 0;
     return new Intl.NumberFormat('en-US', {
@@ -263,33 +257,32 @@ export class DashboardRoomsComponent implements OnInit {
     return 'bg-gray-100 text-gray-600';
   }
 
-  // ==== Acciones (de momento solo logs) ====
+  /** Inicial del tipo de habitación: S, D, F, etc. */
+  getRoomInitial(roomType?: string | null): string {
+    if (!roomType) return '?';
+    const t = roomType.toLowerCase().trim();
 
-  addRoom(): void {
-    console.log('TODO: Add Room modal / navigation');
+    if (t.includes('familiar')) return 'F';
+    if (t.includes('doble')) return 'D';
+    if (t.includes('simple') || t.includes('sencilla')) return 'S';
+
+    // En caso de que sea otro tipo, toma la primera letra
+    return t.charAt(0).toUpperCase();
   }
 
+  // ===== Modal de detalles =====
+  viewDetails(room: Room): void {
+    this.selectedRoom = room;
+    this.showDetails = true;
+  }
+
+  closeDetails(): void {
+    this.showDetails = false;
+    this.selectedRoom = null;
+  }
+
+  // (Acciones que ya no se usan en el HTML, las puedes borrar si quieres)
   exportData(): void {
     console.log('TODO: export rooms as CSV/XLSX');
-  }
-
-  viewDetails(room: Room): void {
-    console.log('View details:', room);
-  }
-
-  editRoom(room: Room): void {
-    console.log('Edit room:', room);
-  }
-
-  markAsOccupied(room: Room): void {
-    console.log('TODO: call backend to mark as occupied:', room);
-  }
-
-  markAsAvailable(room: Room): void {
-    console.log('TODO: call backend to mark as available:', room);
-  }
-
-  deleteRoom(room: Room): void {
-    console.log('TODO: call backend to delete room:', room);
   }
 }

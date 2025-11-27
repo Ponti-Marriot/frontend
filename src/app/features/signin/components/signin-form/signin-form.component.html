@@ -1,8 +1,8 @@
 <div
   class="flex flex-col justify-center min-h-screen px-6 py-12 lg:px-12 bg-slate-950"
 >
-  <!-- Toast Component -->
-  <p-toast position="top-right" />
+  <!-- Toast Component - Asegúrate de que esté fuera del formulario -->
+  <p-toast position="top-right"></p-toast>
 
   <div class="w-full max-w-md mx-auto">
     <!-- Logo -->
@@ -38,6 +38,7 @@
           pInputText
           id="username"
           formControlName="username"
+          type="email"
           [placeholder]="config.usernamePlaceholder"
           class="!w-full !bg-slate-800/50 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !transition-all"
           [class.!ring-red-500]="
@@ -100,14 +101,18 @@
         <label for="password" class="block text-sm font-medium text-slate-300">
           {{ config.passwordLabel }}
         </label>
-        <p-password
-          formControlName="password"
-          [placeholder]="config.passwordPlaceholder"
-          [toggleMask]="true"
-          [feedback]="false"
-          inputStyleClass="!w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12"
-          styleClass="w-full [&_.p-password]:w-full [&_.p-password]:relative [&_button]:!text-white [&_button]:!bg-transparent [&_button]:!border-0 [&_button]:!absolute [&_button]:!right-3 [&_button]:!top-1/2 [&_button]:!-translate-y-1/2 [&_button]:!w-8 [&_button]:!h-8 [&_button]:hover:!ring-indigo-500 [&_button]:!rounded [&_button]:!transition-colors [&_button_.pi]:!text-base"
-        />
+        <div class="relative w-full">
+          <p-password
+            formControlName="password"
+            [placeholder]="config.passwordPlaceholder"
+            [toggleMask]="true"
+            [feedback]="false"
+            inputId="password"
+            styleClass="w-full block"
+            inputStyleClass="w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12 !transition-all"
+          >
+          </p-password>
+        </div>
         <p
           *ngIf="
             authForm.get('password')?.hasError('required') &&
@@ -127,14 +132,18 @@
         >
           {{ config.newPasswordLabel }}
         </label>
-        <p-password
-          formControlName="newPassword"
-          [placeholder]="config.newPasswordPlaceholder"
-          [toggleMask]="true"
-          [feedback]="true"
-          inputStyleClass="!w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12"
-          styleClass="w-full [&_.p-password]:w-full [&_.p-password]:relative [&_button]:!text-white [&_button]:!bg-transparent [&_button]:!border-0 [&_button]:!absolute [&_button]:!right-3 [&_button]:!top-1/2 [&_button]:!-translate-y-1/2 [&_button]:!w-8 [&_button]:!h-8 [&_button]:hover:!ring-indigo-500 [&_button]:!rounded [&_button]:!transition-colors [&_button_.pi]:!text-base"
-        />
+        <div class="relative w-full">
+          <p-password
+            formControlName="newPassword"
+            [placeholder]="config.newPasswordPlaceholder"
+            [toggleMask]="true"
+            [feedback]="true"
+            inputId="newPassword"
+            styleClass="w-full block"
+            inputStyleClass="w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12 !transition-all"
+          >
+          </p-password>
+        </div>
       </div>
 
       <!-- Confirm Password Field (solo para change password) -->
@@ -145,14 +154,18 @@
         >
           {{ config.confirmPasswordLabel }}
         </label>
-        <p-password
-          formControlName="confirmPassword"
-          [placeholder]="config.confirmPasswordPlaceholder"
-          [toggleMask]="true"
-          [feedback]="false"
-          inputStyleClass="!w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12"
-          styleClass="w-full [&_.p-password]:w-full [&_.p-password]:relative [&_button]:!text-white [&_button]:!bg-transparent [&_button]:!border-0 [&_button]:!absolute [&_button]:!right-3 [&_button]:!top-1/2 [&_button]:!-translate-y-1/2 [&_button]:!w-8 [&_button]:!h-8 [&_button]:hover:!ring-indigo-500 [&_button]:!rounded [&_button]:!transition-colors [&_button_.pi]:!text-base"
-        />
+        <div class="relative w-full">
+          <p-password
+            formControlName="confirmPassword"
+            [placeholder]="config.confirmPasswordPlaceholder"
+            [toggleMask]="true"
+            [feedback]="false"
+            inputId="confirmPassword"
+            styleClass="w-full block"
+            inputStyleClass="w-full !bg-slate-800/50 !border-slate-700 !text-slate-300 placeholder:!text-slate-500 !ring-1 focus:!ring-2 focus:!ring-indigo-500 hover:!ring-indigo-500 !rounded-lg !px-4 !py-3 !pr-12 !transition-all"
+          >
+          </p-password>
+        </div>
         <!-- Error Message -->
         <p *ngIf="passwordMismatch" class="text-sm text-red-400 mt-1">
           Passwords do not match
@@ -164,7 +177,7 @@
         <button
           type="submit"
           [disabled]="isFormInvalid"
-          class="w-full bg-indigo-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:cursor-pointer"
+          class="w-full bg-indigo-600 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
         >
           {{ config.submitLabel }}
         </button>

@@ -5,11 +5,11 @@ export interface Location {
   state: string;
   cityCode: string;
   cityName: string;
-  timezone: string;
-  subdivCode: string;
+  timezone: string | null;
+  subdivCode: string | null;
 }
 
-// Images associated to a hotel property
+// Images associated to a hotel property (front-only helper or separate entity)
 export interface HotelImage {
   id: string;
   hotelPropertyId: string;
@@ -20,17 +20,12 @@ export interface HotelImage {
 // Directly mapped from backend HotelProperty entity
 export interface HotelProperty {
   id: string;
-  name: string;
-  description?: string;
-  squareMeters?: number;
-  stars: number;
-  propertyType: string;
-  locationId: string;
-  address: string;
-  availabilityDatesId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  photosUrls?: string[];
+  name: string | null; // name VARCHAR(255) NULL en la BD
+  stars: number | null; // stars INT8 NULL
+  propertyType: string; // NOT NULL en la BD
+  locationId: string; // NOT NULL en la BD
+  address: string | null; // VARCHAR(255) NULL
+  imagesId?: string | null; // FK a images.id, puede ser NULL
 }
 
 // Optional: if you have a Settings table in backend

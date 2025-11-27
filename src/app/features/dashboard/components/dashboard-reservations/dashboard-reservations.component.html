@@ -6,18 +6,8 @@
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Reservations</h1>
       <p class="text-sm text-gray-500">
-        Manage and monitor all reservations in the hotel chain.
+        Visualize and monitor all reservations in the hotel chain.
       </p>
-    </div>
-
-    <div class="flex flex-wrap items-center gap-3">
-      <button
-        class="px-4 py-2.5 text-sm font-medium text-white bg-slate-950 rounded-lg hover:bg-slate-800 flex items-center gap-2 transition-colors whitespace-nowrap"
-        type="button"
-      >
-        <i class="pi pi-plus text-sm"></i>
-        <span>New Reservation</span>
-      </button>
     </div>
   </div>
 
@@ -155,16 +145,23 @@
 
         <tbody class="divide-y divide-gray-200">
           <tr
-            *ngFor="let r of reservations()"
+            *ngFor="let r of paginatedReservations()"
             class="hover:bg-gray-50 transition-colors"
           >
             <!-- Reservation & ID -->
             <td class="px-6 py-4">
-              <div>
-                <p class="text-sm font-semibold text-gray-900">
-                  {{ r.reservationNumber }}
-                </p>
-                <p class="text-xs text-gray-500">ID: {{ r.id }}</p>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-slate-900"
+                >
+                  {{ getReservationInitial() }}
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900">
+                    Reservation {{ r.reservationNumber || "—" }}
+                  </p>
+                  <p class="text-xs text-gray-500">ID: {{ r.id }}</p>
+                </div>
               </div>
             </td>
 
@@ -204,30 +201,11 @@
             <td class="px-6 py-4 text-right">
               <div class="flex justify-end gap-2">
                 <button
-                  *ngIf="isConfirmed(r)"
-                  (click)="checkIn(r)"
-                  class="w-8 h-8 rounded-full flex items-center justify-center bg-green-100 hover:bg-green-200 text-green-600 transition-colors"
-                  title="Check-in"
+                  (click)="openDetails(r)"
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors"
+                  title="View details"
                 >
-                  <i class="pi pi-sign-in text-sm"></i>
-                </button>
-
-                <button
-                  *ngIf="isCheckIn(r)"
-                  (click)="checkOut(r)"
-                  class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-                  title="Check-out"
-                >
-                  <i class="pi pi-sign-out text-sm"></i>
-                </button>
-
-                <button
-                  *ngIf="isCancellable(r)"
-                  (click)="cancelReservation(r)"
-                  class="w-8 h-8 rounded-full flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
-                  title="Cancel"
-                >
-                  <i class="pi pi-times text-sm"></i>
+                  <i class="pi pi-eye text-sm"></i>
                 </button>
               </div>
             </td>
@@ -241,8 +219,11 @@
       class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
     >
       <p class="text-sm text-gray-600">
-        Showing {{ (currentPage() - 1) * pageSize() + 1 }} to
-        {{ min(currentPage() * pageSize(), totalItems()) }} of
+        Showing
+        {{ totalItems() === 0 ? 0 : (currentPage() - 1) * pageSize() + 1 }}
+        to
+        {{ min(currentPage() * pageSize(), totalItems()) }}
+        of
         {{ totalItems() }} results
       </p>
 
@@ -280,6 +261,128 @@
           Next
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- === Details Popup === -->
+  <div
+    *ngIf="isDetailsOpen()"
+    class="fixed inset-0 z-40 flex items-center justify-center"
+  >
+    <!-- Fondo opacado (no negro sólido) -->
+    <div
+      class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      (click)="closeDetails()"
+    ></div>
+
+    <div
+      class="relative z-50 bg-white rounded-2xl shadow-xl max-w-xl w-full mx-4"
+    >
+      <ng-container *ngIf="selectedReservationDetails() as selected">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200 flex items-start gap-3">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-slate-900"
+          >
+            {{ getReservationInitial() }}
+          </div>
+          <div class="flex-1">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-gray-900">
+                  Reservation {{ selected.reservationNumber || "—" }}
+                </p>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  ID: {{ selected.id }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                (click)="closeDetails()"
+                aria-label="Close"
+              >
+                <i class="pi pi-times text-sm"></i>
+              </button>
+            </div>
+            <div class="mt-2">
+              <span
+                class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full"
+                [class]="getStatusClass(selected.status)"
+              >
+                {{ selected.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="px-6 py-4 space-y-4">
+          <!-- Guest -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-gray-500 uppercase">Guest</p>
+              <p class="text-sm text-gray-900 mt-1">
+                {{ selected.guestName || "N/A" }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-xs font-medium text-gray-500 uppercase">
+                Reservation Number
+              </p>
+              <p class="text-sm text-gray-900 mt-1">
+                {{ selected.reservationNumber || "—" }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Dates -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-gray-500 uppercase">
+                Check-in
+              </p>
+              <p class="text-sm text-gray-900 mt-1">
+                {{ formatDate(selected.checkIn) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-gray-500 uppercase">
+                Check-out
+              </p>
+              <p class="text-sm text-gray-900 mt-1">
+                {{ formatDate(selected.checkOut) }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Amount -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-gray-500 uppercase">
+                Total Amount
+              </p>
+              <p class="text-sm text-gray-900 mt-1">
+                {{ formatCurrency(selected.totalAmount) }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Aquí luego puedes añadir room / hotel details si quieres -->
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-3 border-t border-gray-200 flex justify-end">
+          <button
+            type="button"
+            (click)="closeDetails()"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </ng-container>
     </div>
   </div>
 </div>

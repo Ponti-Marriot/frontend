@@ -1,13 +1,10 @@
-// src/app/dashboard/dashboard-reservations.component.ts
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
-  Reservation,
-  ReservationFilters,
-  ReservationStats,
-  PaginationData,
+  ReservationSummary,
+  ReservationDetails,
   ReservationStatus,
 } from '../../models/reservation.model';
 import { ReservationsService } from '../../services/reservations.service';
@@ -20,6 +17,8 @@ interface StatCard {
   icon: string; // PrimeIcons class
 }
 
+type DateRangeFilter = 'all' | 'today' | '7d' | '30d';
+
 @Component({
   selector: 'app-dashboard-reservations',
   standalone: true,
@@ -27,102 +26,158 @@ interface StatCard {
   templateUrl: './dashboard-reservations.component.html',
 })
 export class DashboardReservationsComponent implements OnInit {
-  constructor(private reservationsService: ReservationsService) {}
+  constructor(private reservationsService: ReservationsService) {
+    // Effect para mantener currentPage dentro de [1, totalPages]
+    effect(() => {
+      const total = this.totalPages();
+      const page = this.currentPage();
+      const safe = Math.min(Math.max(1, page), total);
+      if (safe !== page) {
+        this.currentPage.set(safe);
+      }
+    });
+  }
 
-  // ---- State ----
-  readonly reservations = signal<Reservation[]>([]);
+  // ===== State =====
+  readonly reservations = signal<ReservationSummary[]>([]);
 
   readonly currentPage = signal<number>(1);
   readonly pageSize = signal<number>(10);
-  readonly totalItems = signal<number>(0);
-  readonly totalPages = signal<number>(1);
 
   readonly searchTerm = signal<string>('');
   readonly selectedStatus = signal<'all' | ReservationStatus>('all');
-  readonly selectedDateRange = signal<string>('all'); // 'all' | 'today' | '7d' | '30d'
+  readonly selectedDateRange = signal<DateRangeFilter>('all');
 
-  readonly stats = signal<ReservationStats | null>(null);
+  // Detalle (popup)
+  readonly selectedReservationDetails = signal<ReservationDetails | null>(null);
+  readonly isDetailsOpen = signal<boolean>(false);
 
-  // ---- Options ----
+  // ===== Options =====
   statusOptions = [
-    { label: 'All statuses', value: 'all' },
-    { label: 'Confirmed', value: ReservationStatus.CONFIRMED },
-    { label: 'Check-in', value: ReservationStatus.CHECK_IN },
-    { label: 'Check-out', value: ReservationStatus.CHECK_OUT },
-    { label: 'Pending', value: ReservationStatus.PENDING },
-    { label: 'Cancelled', value: ReservationStatus.CANCELLED },
-    { label: 'Completed', value: ReservationStatus.COMPLETED },
-    { label: 'No Show', value: ReservationStatus.NO_SHOW },
+    { label: 'All statuses', value: 'all' as const },
+    { label: 'Pending', value: 'PENDING' as ReservationStatus },
+    { label: 'Confirmed', value: 'CONFIRMED' as ReservationStatus },
+    { label: 'Checked-in', value: 'CHECKED_IN' as ReservationStatus },
+    { label: 'Checked-out', value: 'CHECKED_OUT' as ReservationStatus },
+    { label: 'Cancelled', value: 'CANCELLED' as ReservationStatus },
   ];
 
   dateRangeOptions = [
-    { label: 'All time', value: 'all' },
-    { label: 'Today', value: 'today' },
-    { label: 'Last 7 days', value: '7d' },
-    { label: 'Last 30 days', value: '30d' },
+    { label: 'All time', value: 'all' as const },
+    { label: 'Today', value: 'today' as const },
+    { label: 'Last 7 days', value: '7d' as const },
+    { label: 'Last 30 days', value: '30d' as const },
   ];
 
-  // ---- Stat cards ----
+  // ===== Derived data =====
+
+  /** Aplica filtros de texto, estado y rango de fechas */
+  readonly filteredReservations = computed<ReservationSummary[]>(() => {
+    const list = this.reservations();
+    const term = this.searchTerm().trim().toLowerCase();
+    const statusFilter = this.selectedStatus();
+    const range = this.selectedDateRange();
+
+    return list.filter((r) => {
+      // 1) Filtro por texto
+      const matchesTerm =
+        term.length === 0 ||
+        (r.reservationNumber ?? '').toLowerCase().includes(term) ||
+        (r.guestName ?? '').toLowerCase().includes(term) ||
+        (r.status ?? '').toString().toLowerCase().includes(term);
+
+      if (!matchesTerm) return false;
+
+      // 2) Filtro por estado
+      if (statusFilter !== 'all') {
+        const s = (r.status ?? '').toString().toUpperCase();
+        if (s !== statusFilter) return false;
+      }
+
+      // 3) Filtro por rango de fechas (usamos checkIn)
+      if (range !== 'all') {
+        const checkInDate = new Date(r.checkIn);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (range === 'today') {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(today.getDate() + 1);
+          if (!(checkInDate >= today && checkInDate < tomorrow)) return false;
+        }
+
+        if (range === '7d' || range === '30d') {
+          const days = range === '7d' ? 7 : 30;
+          const start = new Date(today);
+          start.setDate(today.getDate() - days);
+          const end = new Date(today);
+          end.setDate(today.getDate() + 1);
+          if (!(checkInDate >= start && checkInDate < end)) return false;
+        }
+      }
+
+      return true;
+    });
+  });
+
+  /** Pagina el resultado filtrado */
+  readonly paginatedReservations = computed<ReservationSummary[]>(() => {
+    const pageSize = this.pageSize();
+    const currentPage = this.currentPage();
+    const list = this.filteredReservations();
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return list.slice(start, end);
+  });
+
+  readonly totalItems = computed<number>(
+    () => this.filteredReservations().length
+  );
+  readonly totalPages = computed<number>(() =>
+    Math.max(1, Math.ceil(this.totalItems() / this.pageSize()))
+  );
+
+  /** Tarjetas de stats calculadas localmente */
   readonly statCards = computed<StatCard[]>(() => {
-    const s = this.stats();
-    if (!s) {
-      return [
-        {
-          title: 'Total Reservations',
-          value: '0',
-          subtitle: '',
-          color: 'blue',
-          icon: 'pi pi-calendar',
-        },
-        {
-          title: 'Confirmed',
-          value: '0',
-          subtitle: '',
-          color: 'green',
-          icon: 'pi pi-check-circle',
-        },
-        {
-          title: 'Pending',
-          value: '0',
-          subtitle: '',
-          color: 'yellow',
-          icon: 'pi pi-clock',
-        },
-        {
-          title: 'Cancelled',
-          value: '0',
-          subtitle: '',
-          color: 'red',
-          icon: 'pi pi-times-circle',
-        },
-      ];
-    }
+    const list = this.reservations();
+
+    const total = list.length;
+    const pending = list.filter(
+      (r) => this.normalizeStatus(r.status) === 'PENDING'
+    ).length;
+    const confirmed = list.filter(
+      (r) => this.normalizeStatus(r.status) === 'CONFIRMED'
+    ).length;
+    const cancelled = list.filter(
+      (r) => this.normalizeStatus(r.status) === 'CANCELLED'
+    ).length;
 
     return [
       {
         title: 'Total Reservations',
-        value: s.total.toString(),
+        value: total.toString(),
         subtitle: '',
         color: 'blue',
         icon: 'pi pi-calendar',
       },
       {
         title: 'Confirmed',
-        value: s.confirmed.toString(),
+        value: confirmed.toString(),
         subtitle: '',
         color: 'green',
         icon: 'pi pi-check-circle',
       },
       {
         title: 'Pending',
-        value: s.pending.toString(),
+        value: pending.toString(),
         subtitle: '',
         color: 'yellow',
         icon: 'pi pi-clock',
       },
       {
         title: 'Cancelled',
-        value: s.cancelled.toString(),
+        value: cancelled.toString(),
         subtitle: '',
         color: 'red',
         icon: 'pi pi-times-circle',
@@ -130,83 +185,31 @@ export class DashboardReservationsComponent implements OnInit {
     ];
   });
 
+  // ===== Lifecycle =====
   ngOnInit(): void {
-    this.loadStats();
     this.loadReservations();
   }
 
-  // ---- Data loading ----
-
-  private buildDateRangeFromSelected(): ReservationFilters['dateRange'] {
-    const v = this.selectedDateRange();
-
-    if (v === 'today') {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const end = new Date();
-      end.setHours(23, 59, 59, 999);
-      return { start, end };
-    }
-
-    if (v === '7d' || v === '30d') {
-      const days = v === '7d' ? 7 : 30;
-      const end = new Date();
-      const start = new Date();
-      start.setDate(end.getDate() - days);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      return { start, end };
-    }
-
-    return undefined;
-  }
-
+  // ===== Data loading =====
   private loadReservations(): void {
-    const filters: ReservationFilters = {
-      status: this.selectedStatus(),
-      dateRange: this.buildDateRangeFromSelected(),
-      searchTerm: this.searchTerm(),
-    };
-
-    const pagination: PaginationData = {
-      page: this.currentPage(),
-      pageSize: this.pageSize(),
-      totalItems: 0,
-      totalPages: 0,
-    };
-
-    this.reservationsService.getReservations(filters, pagination).subscribe({
+    this.reservationsService.getReservations().subscribe({
       next: (res) => {
-        this.reservations.set(res.data);
-        this.currentPage.set(res.pagination.page);
-        this.pageSize.set(res.pagination.pageSize);
-        this.totalItems.set(res.pagination.totalItems);
-        this.totalPages.set(res.pagination.totalPages);
+        console.log('Reservations from API:', res);
+        this.reservations.set(res);
+        this.currentPage.set(1); // reseteamos página al cargar
       },
       error: (err) => {
         console.error('Error loading reservations', err);
         this.reservations.set([]);
-        this.totalItems.set(0);
-        this.totalPages.set(1);
+        this.currentPage.set(1);
       },
     });
   }
 
-  private loadStats(): void {
-    this.reservationsService.getReservationStats().subscribe({
-      next: (s) => this.stats.set(s),
-      error: (err) => {
-        console.error('Error loading reservation stats', err);
-        this.stats.set(null);
-      },
-    });
-  }
-
-  // ---- Filters & pagination ----
+  // ===== Filters & pagination =====
 
   onFilterChange(): void {
     this.currentPage.set(1);
-    this.loadReservations();
   }
 
   clearFilters(): void {
@@ -214,13 +217,12 @@ export class DashboardReservationsComponent implements OnInit {
     this.selectedStatus.set('all');
     this.selectedDateRange.set('all');
     this.currentPage.set(1);
-    this.loadReservations();
   }
 
   onPageChange(page: number): void {
-    if (page < 1 || page > this.totalPages()) return;
+    const total = this.totalPages();
+    if (page < 1 || page > total) return;
     this.currentPage.set(page);
-    this.loadReservations();
   }
 
   getPageNumbers(): number[] {
@@ -249,7 +251,7 @@ export class DashboardReservationsComponent implements OnInit {
     return pages;
   }
 
-  // ---- Template helpers ----
+  // ===== Template helpers =====
 
   formatDate(iso: string | undefined): string {
     if (!iso) return '';
@@ -265,28 +267,22 @@ export class DashboardReservationsComponent implements OnInit {
     }).format(num);
   }
 
-  getStatusClass(status: string | ReservationStatus | undefined): string {
-    const s = String(status ?? '').toLowerCase();
-    if (s === ReservationStatus.CONFIRMED.toLowerCase()) {
+  getStatusClass(status: ReservationStatus | string | undefined): string {
+    const s = this.normalizeStatus(status);
+    if (s === 'CONFIRMED') {
       return 'bg-blue-100 text-blue-800';
     }
-    if (s === ReservationStatus.CHECK_IN.toLowerCase()) {
+    if (s === 'CHECKED_IN') {
       return 'bg-green-100 text-green-800';
     }
-    if (s === ReservationStatus.CHECK_OUT.toLowerCase()) {
+    if (s === 'CHECKED_OUT') {
       return 'bg-gray-100 text-gray-800';
     }
-    if (s === ReservationStatus.PENDING.toLowerCase()) {
+    if (s === 'PENDING') {
       return 'bg-yellow-100 text-yellow-800';
     }
-    if (s === ReservationStatus.CANCELLED.toLowerCase()) {
+    if (s === 'CANCELLED') {
       return 'bg-red-100 text-red-800';
-    }
-    if (s === ReservationStatus.COMPLETED.toLowerCase()) {
-      return 'bg-emerald-100 text-emerald-800';
-    }
-    if (s === ReservationStatus.NO_SHOW.toLowerCase()) {
-      return 'bg-orange-100 text-orange-800';
     }
     return 'bg-gray-100 text-gray-800';
   }
@@ -295,41 +291,33 @@ export class DashboardReservationsComponent implements OnInit {
     return Math.min(a, b);
   }
 
-  // ---- Actions (por ahora logs; luego los conectas a REST) ----
-
-  viewDetails(r: Reservation): void {
-    console.log('Reservation details:', r);
-  }
-
-  cancelReservation(r: Reservation): void {
-    console.log('TODO cancel reservation via REST:', r);
-  }
-
-  checkIn(r: Reservation): void {
-    console.log('TODO check-in via REST:', r);
-  }
-
-  checkOut(r: Reservation): void {
-    console.log('TODO check-out via REST:', r);
-  }
-
   private normalizeStatus(
     status: ReservationStatus | string | undefined
   ): string {
-    return (status ?? '').toString().toLowerCase();
+    return (status ?? '').toString().toUpperCase();
   }
 
-  isConfirmed(r: Reservation): boolean {
-    return this.normalizeStatus(r.status) === 'confirmed';
+  // ===== Detalle (popup, solo lectura) =====
+
+  openDetails(r: ReservationSummary): void {
+    this.reservationsService.getReservationById(r.id).subscribe({
+      next: (details) => {
+        this.selectedReservationDetails.set(details);
+        this.isDetailsOpen.set(true);
+      },
+      error: (err) => {
+        console.error('Error loading reservation details', err);
+      },
+    });
   }
 
-  isCheckIn(r: Reservation): boolean {
-    const s = this.normalizeStatus(r.status);
-    return s === 'check-in' || s === 'check_in';
+  closeDetails(): void {
+    this.isDetailsOpen.set(false);
+    this.selectedReservationDetails.set(null);
   }
 
-  isCancellable(r: Reservation): boolean {
-    const s = this.normalizeStatus(r.status);
-    return s !== 'cancelled' && s !== 'completed';
+  getReservationInitial(): string {
+    // Solo la "R"
+    return 'R';
   }
 }

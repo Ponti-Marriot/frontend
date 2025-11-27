@@ -5,64 +5,52 @@ export enum RoomStatus {
   MAINTENANCE = 'Maintenance',
 }
 
-export interface RoomType {
-  id: string;
-  name: string;
-  description?: string;
-}
-
 export interface Room {
   id: string;
 
-  // Campos base de la tabla rooms
+  // Base
   title?: string;
   description?: string;
-  roomType?: RoomType;
-  availabilityDatesId?: string;
+
+  // AHORA roomType es string (no objeto)
+  roomType?: string;
+
   createdAt?: string;
   updatedAt?: string;
 
-  // Campos de UI / agregados desde el back
-  status?: RoomStatus | string;
+  // Campos agregados desde backend
   roomNumber?: string;
-  floor?: string;
   price?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+
+  status?: RoomStatus | string;
 
   hotel?: {
     id: string;
     name?: string;
-    locationName?: string; // ciudad / sucursal
-    region?: string; // ej. "Andean", "Caribbean", etc.
+    city?: string;
+    region?: string;
+    country?: string;
   };
 
   currentGuest?: string;
-  checkOutDate?: string; // ISO string para "Current Guest"
+  checkOutDate?: string;
 }
 
-export interface AvailabilityDates {
-  id: string;
-  roomId: string;
-  startDate: string; // ISO date
-  endDate: string; // ISO date
-  createdAt: string;
+export interface RoomFilters {
+  region?: string;
+  hotel?: string;
+  status?: string;
+  roomType?: string;
+  searchTerm?: string;
 }
 
-export interface RoomService {
-  id: string;
-  name: string;
-  category?: string;
-  description?: string;
-}
-
-export interface RoomReservation {
-  id: string;
-  reservationNumber: string;
-  guestName: string;
-  checkIn: string;
-  checkOut: string;
-  status: string;
-  roomNumber?: string;
-  hotelName?: string;
+export interface PaginationData {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
 }
 
 export interface RoomStats {
@@ -73,25 +61,13 @@ export interface RoomStats {
   avgRatePerNight: number;
 }
 
-export interface RoomTypeStats {
-  type: string;
-  count: number;
-  totalRooms: number;
-  ratePerNight: number;
-}
-
-export interface RoomFilters {
-  region?: string;
-  hotel?: string;
-  status?: string;
-  roomType?: string;
-  floor?: string;
-  searchTerm?: string;
-}
-
-export interface PaginationData {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
+export interface CreateRoomRequest {
+  hotelPropertyId?: string;
+  title: string;
+  description?: string;
+  roomType: string;
+  pricePerNight: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  roomServiceIds?: string[];
 }
