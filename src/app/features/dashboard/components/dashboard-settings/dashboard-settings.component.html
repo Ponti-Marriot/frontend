@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <!-- Botón "Add room" mejorado -->
+    <!-- Botón "Add room" -->
     <div class="flex justify-end">
       <button
         type="button"
@@ -236,7 +236,7 @@
     *ngIf="showModal()"
     class="fixed inset-0 z-40 flex items-center justify-center"
   >
-    <!-- Fondo opacado con backdrop blur -->
+    <!-- Fondo opacado -->
     <div
       class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
       (click)="closeModal()"
@@ -320,43 +320,31 @@
           </div>
         </div>
 
-        <!-- Title & Room type -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">
-              Title
-            </label>
-            <input
-              type="text"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-              [class.text-gray-400]="modalMode === 'view'"
-              [class.text-gray-900]="modalMode !== 'view'"
-              [(ngModel)]="roomForm.title"
-              name="title"
-              [disabled]="modalMode === 'view'"
-              placeholder="e.g. Room 101 - Standard"
-            />
-          </div>
+        <!-- SOLO Room type + Price / Bedrooms / Bathrooms -->
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Room type como select con solo 3 opciones -->
           <div>
             <label class="block text-xs font-semibold text-gray-500 mb-1">
               Room type
             </label>
-            <input
-              type="text"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-              [class.text-gray-400]="modalMode === 'view'"
-              [class.text-gray-900]="modalMode !== 'view'"
-              [(ngModel)]="roomForm.roomType"
-              name="roomType"
-              [disabled]="modalMode === 'view'"
-              placeholder="Single, Double, Family..."
-            />
+            <div
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              <select
+                class="w-full bg-transparent outline-none max-h-32 overflow-y-auto"
+                [(ngModel)]="roomForm.roomType"
+                name="roomType"
+                [disabled]="modalMode === 'view'"
+              >
+                <option [ngValue]="'simple'">Simple</option>
+                <option [ngValue]="'doble'">Doble</option>
+                <option [ngValue]="'familiar'">Familiar</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        <!-- Price / Bedrooms / Bathrooms -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Price per night -->
           <div>
             <label class="block text-xs font-semibold text-gray-500 mb-1">
               Price per night
@@ -372,7 +360,10 @@
               [disabled]="modalMode === 'view'"
             />
           </div>
+        </div>
 
+        <!-- Bedrooms / Bathrooms -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-gray-500 mb-1">
               Bedrooms
@@ -406,23 +397,6 @@
           </div>
         </div>
 
-        <!-- Description -->
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1">
-            Description
-          </label>
-          <textarea
-            rows="3"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-            [class.text-gray-400]="modalMode === 'view'"
-            [class.text-gray-900]="modalMode !== 'view'"
-            [(ngModel)]="roomForm.description"
-            name="description"
-            [disabled]="modalMode === 'view'"
-            placeholder="Optional description of the room..."
-          ></textarea>
-        </div>
-
         <!-- Footer -->
         <div
           class="pt-4 border-t border-gray-200 flex items-center justify-end gap-3"
@@ -451,11 +425,11 @@
   </div>
 
   <!-- MODAL: DELETE CONFIRMATION -->
+  <!-- (lo dejo igual que lo tenías) -->
   <div
     *ngIf="showDeleteConfirm()"
     class="fixed inset-0 z-40 flex items-center justify-center"
   >
-    <!-- Fondo opacado con backdrop blur -->
     <div
       class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
       (click)="closeDeleteConfirm()"
@@ -464,7 +438,6 @@
     <div
       class="relative z-50 bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 overflow-hidden"
     >
-      <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-semibold text-gray-900">Delete room?</h3>
         <p class="text-sm text-gray-500 mt-1">
@@ -473,7 +446,6 @@
         </p>
       </div>
 
-      <!-- Body - Room info -->
       <div class="px-6 py-4 bg-gray-50">
         <div class="flex items-center gap-3">
           <div
@@ -501,7 +473,6 @@
         </div>
       </div>
 
-      <!-- Footer -->
       <div
         class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3"
       >

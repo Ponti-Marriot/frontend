@@ -98,7 +98,7 @@ export class DashboardSettingsComponent implements OnInit {
           next: (hotels) => {
             this.allHotels = hotels;
 
-            // Region inicial: primera disponible
+            // Región inicial: primera disponible
             if (regionsArray.length > 0) {
               this.selectedRegion = regionsArray[0];
               this.updateHotelsForRegion(this.selectedRegion);
@@ -316,36 +316,28 @@ export class DashboardSettingsComponent implements OnInit {
       return;
     }
 
+    // Payload alineado 1:1 con RoomCreationRequestDTO (solo 5 campos)
     const payload: CreateRoomRequest = {
-      hotelPropertyId: this.roomForm.hotelPropertyId,
-      title: this.roomForm.title,
-      description: this.roomForm.description || undefined,
-      roomType: this.roomForm.roomType,
-      pricePerNight: this.roomForm.pricePerNight ?? 0,
-      bedrooms: this.roomForm.bedrooms ?? undefined,
-      bathrooms: this.roomForm.bathrooms ?? undefined,
-      roomServiceIds: this.roomForm.roomServiceIds.length
-        ? this.roomForm.roomServiceIds
-        : undefined,
+      hotel_property_id: this.roomForm.hotelPropertyId,
+      room_type: this.roomForm.roomType, // 'simple' | 'familiar' | 'doble'
+      price_per_night: this.roomForm.pricePerNight ?? 0,
+      bedrooms: this.roomForm.bedrooms ?? 0,
+      bathrooms: this.roomForm.bathrooms ?? 0,
     };
 
     if (this.modalMode === 'create') {
-      this.settingsService
-        .createRoom(this.roomForm.hotelPropertyId, payload)
-        .subscribe({
-          next: (created) => {
-            // Recargar lista (en settings no son miles, es barato)
-            this.loadRoomsForHotel(this.roomForm.hotelPropertyId);
-            this.showModal.set(false);
-          },
-          error: (err) => {
-            console.error('Error creating room', err);
-          },
-        });
+      this.settingsService.createRoom(payload).subscribe({
+        next: () => {
+          this.loadRoomsForHotel(this.roomForm.hotelPropertyId);
+          this.showModal.set(false);
+        },
+        error: (err) => {
+          console.error('Error creating room', err);
+        },
+      });
     } else if (this.modalMode === 'edit' && this.currentRoom) {
       this.settingsService.updateRoom(this.currentRoom.id, payload).subscribe({
         next: (updated) => {
-          // Actualizar lista local
           this.rooms.update((list) =>
             list.map((r) => (r.id === updated.id ? updated : r))
           );

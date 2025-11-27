@@ -1,4 +1,3 @@
-// Directly mapped from backend Location entity
 export interface Location {
   id: string;
   countryCode: string;
@@ -9,7 +8,6 @@ export interface Location {
   subdivCode: string | null;
 }
 
-// Images associated to a hotel property (front-only helper or separate entity)
 export interface HotelImage {
   id: string;
   hotelPropertyId: string;
@@ -17,18 +15,25 @@ export interface HotelImage {
   isPrimary: boolean;
 }
 
-// Directly mapped from backend HotelProperty entity
 export interface HotelProperty {
   id: string;
-  name: string | null; // name VARCHAR(255) NULL en la BD
-  stars: number | null; // stars INT8 NULL
-  propertyType: string; // NOT NULL en la BD
-  locationId: string; // NOT NULL en la BD
-  address: string | null; // VARCHAR(255) NULL
-  imagesId?: string | null; // FK a images.id, puede ser NULL
+  name: string | null;
+  stars: number | null;
+  propertyType: string;
+  locationId: string;
+  address: string | null;
+  imagesId?: string | null;
 }
 
-// Optional: if you have a Settings table in backend
+export interface HotelPropertyRoom {
+  id: string;
+  hotel_property_id: string;
+  room_id: string;
+  bedrooms: number;
+  bathrooms: number;
+  price_per_night: number;
+}
+
 export interface Setting {
   id: string;
   key: string;

@@ -33,7 +33,7 @@ export class SettingsService {
   // ---- Rooms grouped by hotel ----
 
   getRoomsByHotel(hotelId: string): Observable<Room[]> {
-    // ahora el endpoint es /rooms/hotel/{hotelId}
+    // sigue usando el endpoint de rooms por hotel
     return this.http.get<Room[]>(`${this.apiUrl}/rooms/hotel/${hotelId}`);
   }
 
@@ -55,9 +55,14 @@ export class SettingsService {
 
   // ---- CRUD Rooms ----
 
-  createRoom(hotelId: string, payload: CreateRoomRequest): Observable<Room> {
+  /**
+   * Ahora crea habitaciones usando el controlador:
+   * POST /db/reservas/property-rooms
+   * y envía TODO en el body (incluyendo hotelPropertyId).
+   */
+  createRoom(payload: CreateRoomRequest): Observable<Room> {
     return this.http.post<Room>(
-      `${this.apiUrl}/rooms/hotel/${hotelId}`,
+      `${backUrl}/db/reservas/property-rooms`,
       payload
     );
   }
@@ -97,12 +102,10 @@ export class SettingsService {
       result = result.filter((r) => r.status === filters.status);
     }
 
-    // By room type (ahora es string, no objeto)
+    // By room type (string)
     if (filters.roomType && filters.roomType !== 'all') {
       result = result.filter((r) => r.roomType === filters.roomType);
     }
-
-    // (Se elimina filtro por floor porque RoomFilters ya no tiene 'floor')
 
     // By search
     if (filters.searchTerm?.trim()) {

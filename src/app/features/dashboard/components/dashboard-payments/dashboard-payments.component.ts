@@ -39,7 +39,11 @@ export class DashboardPaymentsComponent implements OnInit {
   readonly selectedMethod = signal<string>('all');
   readonly selectedDateRange = signal<string>('all');
 
-  // ---- Options para filtros ----
+  // Modal state for payment details
+  readonly showDetails = signal<boolean>(false);
+  readonly selectedPayment = signal<Payment | null>(null);
+
+  // ---- Filter options ----
   statusOptions = [
     { label: 'All statuses', value: 'all' },
     { label: 'Completed', value: PaymentStatus.COMPLETED },
@@ -61,7 +65,7 @@ export class DashboardPaymentsComponent implements OnInit {
     { label: 'Last 30 days', value: '30d' },
   ];
 
-  // ---- Tarjetas de stats calculadas a partir de payments() ----
+  // ---- Stat cards computed from payments list ----
   readonly statCards = computed<StatCard[]>(() => {
     const list = this.payments();
 
@@ -186,7 +190,8 @@ export class DashboardPaymentsComponent implements OnInit {
       return { start, end };
     }
 
-    return undefined; // all
+    // 'all'
+    return undefined;
   }
 
   private loadPayments(): void {
@@ -282,22 +287,28 @@ export class DashboardPaymentsComponent implements OnInit {
     let start = Math.max(2, current - 1);
     let end = Math.min(total - 1, current + 1);
 
-    if (start > 2) pages.push(-1);
+    if (start > 2) pages.push(-1); // ellipsis
 
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
 
-    if (end < total - 1) pages.push(-1);
+    if (end < total - 1) pages.push(-1); // ellipsis
 
     pages.push(total);
     return pages;
   }
 
-  // ---- Actions (por ahora solo logs) ----
+  // ---- Actions ----
 
   viewDetails(payment: Payment): void {
-    console.log('View details for payment', payment);
+    this.selectedPayment.set(payment);
+    this.showDetails.set(true);
+  }
+
+  closeDetails(): void {
+    this.showDetails.set(false);
+    this.selectedPayment.set(null);
   }
 
   refundPayment(payment: Payment): void {
@@ -312,7 +323,7 @@ export class DashboardPaymentsComponent implements OnInit {
     console.log('Cancel payment (TODO REST endpoint)', payment);
   }
 
-  // ---- Helpers para template ----
+  // ---- Helpers ----
 
   formatCurrency(value: number | null | undefined): string {
     const num = value ?? 0;

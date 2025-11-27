@@ -62,12 +62,9 @@ export interface RoomStats {
 }
 
 export interface CreateRoomRequest {
-  hotelPropertyId?: string;
-  title: string;
-  description?: string;
-  roomType: string;
-  pricePerNight: number;
+  hotel_property_id: string;
+  room_type: string;
+  price_per_night: number;
   bedrooms?: number;
   bathrooms?: number;
-  roomServiceIds?: string[];
 }
